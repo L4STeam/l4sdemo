@@ -1,0 +1,48 @@
+#!/bin/bash -
+
+# This script starts 81 servers, each listening for incoming HTTP requests, and transferring an 
+# amount of data whenever a request arrives. Additionally, it adjusts some kernel variables, in 
+# order to be able to handle the considerable number of processes and threads that is created 
+# without any unfortunate incidents, and adds network delay on the server side.
+
+#Number of servers
+if [ "$#" != "1" ]; then
+        echo "usage: ./start_servers <NR_OF_SERVERS>"
+        exit 65
+fi
+
+NR_OF_SERVERS=$1
+echo "NR_OF_SERVERS: "$NR_OF_SERVERS
+
+#Increase kernel thread, file and orphans values
+echo 8183 > /proc/sys/kernel/threads-max
+echo 50753 > /proc/sys/fs/file-max
+echo 32768 > /proc/sys/net/ipv4/tcp_max_orphans
+
+#Add different network delays based on the port number
+#/root/server/add_ct_server_delay eth0
+
+#Login command to the emulator
+#SSH_EMULATOR="ssh 192.168.101.85"
+
+#Minimize queue length on the emulator to 100
+#$SSH_EMULATOR "ifconfig eth5 txqueuelen 100"
+#$SSH_EMULATOR "ifconfig eth3 txqueuelen 100"
+
+#Add bandwidth limitation rule to eth5 on the emulator
+#$SSH_EMULATOR "tc qdisc del dev eth5 root htb"
+#$SSH_EMULATOR "tc qdisc add dev eth5 root handle 10: htb default 1"
+#$SSH_EMULATOR "tc class add dev eth5 parent 10: classid 10:1 htb rate 10000kbit ceil 10000kbit burst 6k prio 2"
+
+#Add bandwidth limitation rule to eth3 at the emulator
+#$SSH_EMULATOR "tc qdisc del dev eth3 root htb"
+#$SSH_EMULATOR "tc qdisc add dev eth3 root handle 10: htb default 1"
+#$SSH_EMULATOR "tc class add dev eth3 parent 10: classid 10:1 htb rate 10000kbit ceil 10000kbit burst 6k prio 2"
+
+#Start 81 servers
+declare -i i port
+for i in $(seq 1 $NR_OF_SERVERS); do
+    port=10000+$i
+    ../http_server/run_httpserver $port &
+    echo "[Start server process] Port: $port"
+done

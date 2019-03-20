@@ -1,0 +1,58 @@
+#!/bin/bash 
+
+# This script starts 81 clients, each making HTTP requests with a given time interval between
+# each request. Additionally, it adjusts some kernel variables, in order to be able to handle the 
+# considerable number of processes and threads that is created without any unfortunate incidents,
+# and adds network delay on the client side.
+
+if [ "$#" != "3" ]; then
+ 	echo "usage: ./start_clients <NR_OF_CLIENTS> <HTTP_REQUEST_ITIME> <SERVER IP>"
+ 	exit 65
+fi
+
+#Number of clients
+NR_OF_CLIENTS=$1
+echo "NR_OF_CLIENTS: "$NR_OF_CLIENTS
+#The mean interarrival time for the HTTP requests
+HTTP_REQUEST_ITIME=$2
+echo "HTTP_REQUEST_TIME: "$HTTP_REQUEST_ITIME
+#server IP
+SERVER=$3
+echo "SERVER: "$SERVER
+#Increase kernel thread, file and orphans values
+echo 8183 > /proc/sys/kernel/threads-max
+echo 50753 > /proc/sys/fs/file-max
+echo 32768 > /proc/sys/net/ipv4/tcp_max_orphans
+
+#Add different network delays based on the port number
+#/root/client/add_ct_client_delay eth0
+
+#Login command to the emulator
+#SSH_EMULATOR="ssh 192.168.101.85"
+
+#Minimize queue length on the emulator to 100
+#$SSH_EMULATOR "ifconfig eth5 txqueuelen 100"
+#$SSH_EMULATOR "ifconfig eth3 txqueuelen 100"
+
+#Add bandwidth limitation rule to eth5 on the emulator
+#$SSH_EMULATOR "tc qdisc del dev eth5 root htb"
+#$SSH_EMULATOR "tc qdisc add dev eth5 root handle 10: htb default 1"
+#$SSH_EMULATOR "tc class add dev eth5 parent 10: classid 10:1 htb rate 10000kbit ceil 10000kbit burst 6k prio 2"
+
+#Add bandwidth limitation rule to eth3 at the emulator
+#$SSH_EMULATOR "tc qdisc del dev eth3 root htb"
+#$SSH_EMULATOR "tc qdisc add dev eth3 root handle 10: htb default 1"
+#$SSH_EMULATOR "tc class add dev eth3 parent 10: classid 10:1 htb rate 10000kbit ceil 10000kbit burst 6k prio 2"
+
+#Start  clients
+declare -i i port
+for i in $(seq 1 $NR_OF_CLIENTS); do
+  port=10000+$i
+  ../http_client/http_clients_itime $SERVER $port $HTTP_REQUEST_ITIME &
+  echo "[Start client process] Port $port"
+done
+
+
+
+
+

@@ -1,0 +1,63 @@
+#!/bin/sh -
+
+# This script is identical to the add_ct_client_delay script, except this script checks the
+# source port number in the IP header, while the add_ct_client_delay script checks the
+# destination port. It adds network delay on the server side
+
+# The idea with this script is to be able to add several different delays on 
+# the same network interface. This is done by creating a class hierarchy containing
+# 81 leaf classes, each with a different delay imposed on the class. We have 81 connections
+# running, each with a different port number, and we filter them to a specific sub-class, 
+# based on the port number, thus enabling every connection to have a different delay. The filters 
+# are added to direct each connection to a specific sub-class (at the leaf level). All internal
+# nodes only direct the packets to the appropriate sub-class based on the port number.
+
+# The interface we are gonna add the rules to is given as input parameter
+ETH=$1
+
+# Delete earlier rules
+tc qdisc del dev $ETH root prio
+
+# Create 9 sub-classes of the root class, each is defined as PRIO
+# They will get the ids, 1:1 - 1:9
+tc qdisc add dev $ETH root handle 1: prio bands 9;
+
+
+# We need to send the packet to the right sub-class from the root level, based on the source port 
+# number in the TCP header, thus we add filter rules to obtain this. As we have 9 sub-classes, and 
+want 
+# to be able to support 81 different port numbers, each sub-class needs to deal with 9 different port 
+# numbers. If the port number is in the region of 10001-10009, we send the packet to sub-class 1:1, if 
+# it's between 10010-10018, we send it to 1:2, and so on. The sub-classes will then again send the 
+# packet to a specific sub-class of their own (again based on the port number)
+k=1
+for((i=1; i<=9; i++)); do
+    for((j=1; j<=9; j++)); do
+       tc filter add dev $ETH protocol ip parent 1:0 \
+	   prio 1 u32 match ip sport $[10000+$k] 0xffff classid 1:$i;
+       k=$[$k+1];
+    done
+done
+
+# As we want to be able to handle 81 different connections with different delays, we need to create another
+# level of sub-classes, thus each sub-class of the root creates 9 sub-classes of their own, resulting in 81
+# sub-classes at the lowest level (leaf-classes). Each of these leaf-classes is given a specific delay, using
+# the Netem module. In addition we add filters for each sub-class of the root, to direct the packet to a
+# specific sub-class (of the sub-class...) with delay, based on the port number
+k=1   
+for((i=1; i<=9; i++)); do
+      
+    # Create 9 sub-classes of each sub-class of the root
+    tc qdisc add dev $ETH parent 1:$i handle $[$i*10]: prio bands 9;
+
+    # Add Netem delay to each leaf class, and add 9 filters for each sub-class of the root, so each
+    # sub-class can direct the packets to a specifc sub-class of their own, based on the port number
+    for((j=1; j<=9; j++)); do
+        tc qdisc add dev $ETH parent $[$i*10]:$j \
+	    handle $[$[$i*100]+$j]: netem delay $[$k*5]ms;
+        tc filter add dev $ETH protocol ip parent $[$i*10]:0 \
+	    prio 1 u32 match ip sport $[10000+$k] 0xffff classid $[$i*10]:$j;
+        k=$[$k+1];  
+    done
+done
+
