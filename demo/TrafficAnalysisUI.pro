@@ -41,8 +41,8 @@ HEADERS += \
     src/trafficanalyzerstat.h
 
 INCLUDEPATH += ../../Qt/qwt-6.1/src
-INCLUDEPATH += ../aqmt/aqmt/ta
+INCLUDEPATH += ../traffic_analyzer
 
 LIBS += -L../../Qt/qwt-6.1/lib -lqwt
-LIBS += -L../aqmt/aqmt/ta -lta -lpcap
+LIBS += -L../traffic_analyzer -lta -lpcap
 
