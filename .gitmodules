@@ -1,0 +1,3 @@
+[submodule "aqms/sch_dualpi2"]
+	path = aqms/sch_dualpi2
+	url = https://github.com/olgaalb/sch_dualpi2.git

@@ -15,6 +15,9 @@ if [ "$IFACE"=="" ] || [ "$SRC_NET"=="" ] || [ "$PCAPFILTER"=="" ] || [ "$PCAPFI
 fi
 
 echo "Building and loading qdisc modules"
+
+cd aqms/sch_dualpi2 && git submodule init && git submodule update && cd ../../
+
 # build and load qdisc modules
 ./qdisc_modules_init.sh
 
