@@ -1,6 +1,7 @@
 #ifndef DEMODATA_H
 #define DEMODATA_H
 
+#include <vector>
 #include <QObject>
 
 #define DEMO_QLIM 140

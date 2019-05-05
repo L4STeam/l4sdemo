@@ -40,9 +40,9 @@ HEADERS += \
     src/demodata.h \
     src/trafficanalyzerstat.h
 
-INCLUDEPATH += ../../Qt/qwt-6.1/src
+INCLUDEPATH += ../../Qt5.0.1/qwt-6.1.4/src
 INCLUDEPATH += ../traffic_analyzer
 
-LIBS += -L../../Qt/qwt-6.1/lib -lqwt
+LIBS += -L../../Qt5.0.1/qwt-6.1.4/lib -lqwt
 LIBS += -L../traffic_analyzer -lta -lpcap
 

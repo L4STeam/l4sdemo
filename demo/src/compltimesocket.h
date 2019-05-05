@@ -9,7 +9,7 @@
 #include <QThread>
 #include <QVector>
 #include <qwt_point_3d.h>
-
+#include <vector>
 
 
 class ComplTimeSocket : public QObject
