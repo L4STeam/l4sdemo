@@ -47,7 +47,7 @@
 #include <net/pkt_sched.h>
 #include <net/inet_ecn.h>
 
-#include "../../common/testbed.h" /* only used for testbed */
+#include "testbed.h" /* only used for testbed */
 
 
 /* Controlling Queue Delay (CoDel) algorithm

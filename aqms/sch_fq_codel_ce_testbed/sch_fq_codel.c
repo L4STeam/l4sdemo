@@ -205,7 +205,7 @@ static int fq_codel_enqueue(struct sk_buff *skb, struct Qdisc *sch)
         /* Timestamp the packet so we can calculate the queue length
          * when we collect metrics in the dequeue process.
          */
-        set_ts_cb(skb);
+	__net_timestamp(skb);
 #endif
 
 	codel_set_enqueue_time(skb);
