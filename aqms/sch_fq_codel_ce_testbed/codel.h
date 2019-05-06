@@ -128,6 +128,7 @@ static inline u32 codel_time_to_us(codel_time_t val)
  */
 struct codel_params {
 	codel_time_t	target;
+	codel_time_t    ce_threshold;
 	codel_time_t	interval;
 	bool		ecn;
 };
@@ -170,7 +171,10 @@ struct codel_stats {
 	u32		drop_count;
 	u32		drop_len;
 	u32		ecn_mark;
+	u32             ce_mark;
 };
+
+#define CODEL_DISABLED_THRESHOLD INT_MAX
 
 struct fq_codel_flow {
         struct sk_buff    *head;
@@ -207,6 +211,7 @@ static void codel_params_init(struct codel_params *params)
 {
 	params->interval = MS2TIME(100);
 	params->target = MS2TIME(5);
+	params->ce_threshold = CODEL_DISABLED_THRESHOLD;
 	params->ecn = false;
 }
 

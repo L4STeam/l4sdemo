@@ -205,7 +205,7 @@ static int fq_codel_enqueue(struct sk_buff *skb, struct Qdisc *sch)
         /* Timestamp the packet so we can calculate the queue length
          * when we collect metrics in the dequeue process.
          */
-        __net_timestamp(skb);
+        set_ts_cb(skb);
 #endif
 
 	codel_set_enqueue_time(skb);
@@ -319,6 +319,10 @@ begin:
         testbed_add_metrics(skb, &q->testbed);
 #endif
 
+	if (skb && codel_time_after(&flow->cvars.ldelay, q->cparams.ce_threshold) &&
+            INET_ECN_set_ce(skb))
+                q->cstats.ce_mark++;
+
 	return skb;
 }
 
@@ -366,6 +370,12 @@ static int fq_codel_change(struct Qdisc *sch, struct nlattr *opt)
 
 		q->cparams.target = (target * NSEC_PER_USEC) >> CODEL_SHIFT;
 	}
+
+	if (tb[TCA_FQ_CODEL_CE_THRESHOLD]) {
+                u64 val = nla_get_u32(tb[TCA_FQ_CODEL_CE_THRESHOLD]);
+
+                q->cparams.ce_threshold = (val * NSEC_PER_USEC) >> CODEL_SHIFT;
+        }
 
 	if (tb[TCA_FQ_CODEL_INTERVAL]) {
 		u64 interval = nla_get_u32(tb[TCA_FQ_CODEL_INTERVAL]);
@@ -492,6 +502,11 @@ static int fq_codel_dump(struct Qdisc *sch, struct sk_buff *skb)
 			q->flows_cnt))
 		goto nla_put_failure;
 
+	if (q->cparams.ce_threshold != CODEL_DISABLED_THRESHOLD &&
+            nla_put_u32(skb, TCA_FQ_CODEL_CE_THRESHOLD,
+                        codel_time_to_us(q->cparams.ce_threshold)))
+                goto nla_put_failure;
+
 	return nla_nest_end(skb, opts);
 
 nla_put_failure:
@@ -510,6 +525,7 @@ static int fq_codel_dump_stats(struct Qdisc *sch, struct gnet_dump *d)
 	st.qdisc_stats.drop_overlimit = q->drop_overlimit;
 	st.qdisc_stats.ecn_mark = q->cstats.ecn_mark;
 	st.qdisc_stats.new_flow_count = q->new_flow_count;
+	st.qdisc_stats.ce_mark = q->cstats.ce_mark;
 
 	list_for_each(pos, &q->new_flows)
 		st.qdisc_stats.new_flows_len++;
