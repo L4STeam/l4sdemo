@@ -1,6 +1,8 @@
 #!/bin/bash
 
+sudo tc qdisc del dev $IFACE root
 cd aqms
-for aqm in $(ls aqms); do
-	cd $aqm && make && sudo make load $$ cd ..
+for aqm in $(ls); do
+	cd $aqm && make && sudo make unload && sudo make load
+	cd ..
 done

@@ -8,11 +8,21 @@ SERVER_B=""
 CLIENT_A=""
 CLIENT_B=""
 
-if [ "$IFACE"=="" ] || [ "$SRC_NET"=="" ] || [ "$PCAPFILTER"=="" ] || [ "$PCAPFILTER"=="" ] ||
-	[ "$SERVER_B"=="" ] || [ "$CLIENT_A"=="" ] || [ "$CLIENT_B"=="" ]; then
+if [ "$IFACE" == "" ] || [ "$SRC_NET" == "" ] || [ "$PCAPFILTER" == "" ] || [ "$PCAPFILTER" == "" ] ||
+	[ "$SERVER_B" == "" ] || [ "$CLIENT_A" == "" ] || [ "$CLIENT_B" == "" ]; then
         echo "Input variables at the top of this script should be filled out to continue."
         exit 65
 fi
+
+echo "export IFACE=\"${IFACE}\"" >> $HOME/.bashrc
+echo "export SRC_NET=\"$SRC_NET\"" >> $HOME/.bashrc
+echo "export PCAPFILTER=\"$PCAPFILER\"" >> $HOME/.bashrc
+echo "export SERVER_A=\"$SERVER_A\"" >> $HOME/.bashrc
+echo "export SERVER_B=\"$SERVER_B\"" >> $HOME/.bashrc
+echo "export CLIENT_A=\"$CLIENT_A\"" >> $HOME/.bashrc
+echo "export CLIENT_B=\"$CLIENT_B\"" >> $HOME/.bashrc
+
+(( bash ))
 
 echo "Building and loading qdisc modules"
 
@@ -67,7 +77,7 @@ qt-qwt/qt-unified-linux-x64-3.1.0-online.run
 echo "Installing qwt."
 tar -xvf qt-qwt/qwt-6.1.0.tar.bz2 --directory=/home/${whoami}/Qt5.0.1
 cd /home/${whoami}/Qt5.0.1/qwt-6.1.0/
-/home/olga/Qt5.0.1/5.0.1/gcc_64/bin/qmake qwt.pro && make
+/home/olga/Qt5.0.1/5.0.1/gcc_64/bin/qmake qwt.pro && make && cd ../../
 
 # add to library path for all users, so that L4SDemo can access it after it gets root permissions
 echo "/home/${whoami}/Qt5.0.1/qwt-6.1.4/lib" > qwt.conf
