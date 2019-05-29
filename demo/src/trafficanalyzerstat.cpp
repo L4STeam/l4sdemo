@@ -61,21 +61,19 @@ void TrafficAnalyzerStat::getQSStat()
     // normalise to show inverted qs CDF in %
     if (nrsamples_nonecn > 0) {
         double prev = 0;
-        for (auto it = dd->c_qsize_y.begin(); it != dd->c_qsize_y.end(); ++it)
-            if (*it > 0) {
+        for (auto it = dd->c_qsize_y.begin(); it != dd->c_qsize_y.end(); ++it) {
                 *it = *it * 100 / nrsamples_nonecn + prev;
                 prev = *it;
                 *it = 100 - *it;
-            }
+        }
     }
     if (nrsamples_ecn > 0) {
         double prev = 0;
-        for (auto it = dd->ll_qsize_y.begin(); it != dd->ll_qsize_y.end(); ++it)
-            if (*it > 0) {
+        for (auto it = dd->ll_qsize_y.begin(); it != dd->ll_qsize_y.end(); ++it) {
                 *it = *it * 100 / nrsamples_ecn + prev;
                 prev = *it;
                 *it = 100 - *it;
-            }
+	}
     }
 }
 
