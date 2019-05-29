@@ -18,7 +18,7 @@ else
 	fi
 fi
 RENOPORT="11001"
-PATH_TO_TRAFFIC_GENERATOR="dual-queue-aqm/traffic_generator"
+PATH_TO_TRAFFIC_GENERATOR="traffic_generator"
 
 declare -i mit_r=$1*1000
 link=$2
