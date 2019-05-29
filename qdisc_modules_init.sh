@@ -1,8 +1,10 @@
 #!/bin/bash
 
-sudo tc qdisc del dev $IFACE root
-cd aqms
-for aqm in $(ls); do
-	cd $aqm && make && sudo make unload && sudo make load
-	cd ..
+for aqm in $(ls aqms); do
+	if [[ $aqm == *"dualpi2"* ]]; then
+		echo "Building dualpi2 module with testbed functions enabled"
+		(cd aqms/${aqm} && make IS_TESTBED=1 && sudo make unload && sudo make load)
+	else
+		(cd aqms/${aqm} && make && sudo make unload && sudo make load)
+	fi
 done

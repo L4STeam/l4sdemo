@@ -17,7 +17,7 @@ else
         fi
 fi
 DCTCPPORT="11000"
-PATH_TO_TRAFFIC_GENERATOR="dual-queue-aqm/traffic_generator"
+PATH_TO_TRAFFIC_GENERATOR="traffic_generator"
 
 
 declare -i mit_d=$1*1000
