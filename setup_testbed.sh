@@ -43,12 +43,12 @@ ssh-add
 
 # compile client traffic generator
 for client in "$CLIENT_A" "$CLIENT_B"; do
-	ssh $client "cd traffic_generator/http_client; make; cd ../dl_client; make; cp ../gen_rsample/rit*.txt ~/."
+	ssh $client "cd traffic_generator/http_client; make; cd ../dl_client; make; cp ~/traffic_generator/gen_rsample/rit*.txt ~/."
 done
 
 # compile server traffic generator
 for server in "$SERVER_A" "$SERVER_B"; do
-	ssh $server "cd traffic_generator/http_server; make; cd ../dl_server; make; cp ../gen_rsample/rs*.txt ~/."
+	ssh $server "cd traffic_generator/http_server; make; cd ../dl_server; make; cp ~/traffic_generator/gen_rsample/rs*.txt ~/."
 done
 
 # install dependencies 
@@ -59,11 +59,11 @@ echo "Installing Qt - proceed with the dialog when prompted."
 wget https://download.qt.io/archive/qt/5.0/5.0.1/qt-linux-opensource-5.0.1-x86_64-offline.run
 mv qt-linux-opensource-5.0.1-x86_64-offline.run qt-qwt/.
 chmod +x qt-qwt/qt-linux-opensource-5.0.1-x86_64-offline.run
-qt-qwt/qt-unified-linux-x64-3.1.0-online.run
+qt-qwt/qt-linux-opensource-5.0.1-x86_64-offline.run
 
 # install qwt
 echo "Installing qwt."
-tar -xvf qt-qwt/qwt-6.1.0.tar.bz2 --directory=/home/$(whoami)/Qt5.0.1
+tar -xvf qt-qwt/qwt-6.1.4.tar.bz2 --directory=/home/$(whoami)/Qt5.0.1
 (cd /home/$(whoami)/Qt5.0.1/qwt-6.1.4/ && /home/$(whoami)/Qt5.0.1/5.0.1/gcc_64/bin/qmake qwt.pro && make)
 
 # add to library path for all users, so that L4SDemo can access it after it gets root permissions

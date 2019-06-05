@@ -46,7 +46,7 @@ void DataGenerator::startTA(bool ipc)
     std::cout << "INTERFACE: " << buf_d << "." << std::endl;
 
     std::string pcapf = buf_pf;
-    char *dev = buf_d;
+    char *dev = "enp0s3";
 
     tp = new ThreadParam(sinterval, folder, true, nrs);
     setThreadParam(tp);

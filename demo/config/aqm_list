@@ -1,5 +1,10 @@
 DualPI2 : dpi2
-DualPI2 20ms k2 : dpi2_20
+DualPI2 DC : dpi2_dc
+DualPI2 DC lthresh4 : dpi2_dc_lthresh4
+DualPI2 DC lthresh6 : dpi2_dc_lthresh6
+DualPI2 DC wrr10 : dpi2_dc_wrr10
+DualPI2 DC wrr10 lthresh6 : dpi2_dc_wrr10lthresh6
+DualPI2 DC wrr10 lthresh6 ldrop25 : dpi2_dc_wrr10lthresh6ldrop25
 DualPI2 20ms k1 ect1_scal : dpi2_20_ect1
 DualPI2 40ms : dpi2_40
 DualPI2 10ms : dpi2_10
@@ -24,6 +29,10 @@ PIE 10ms : pie_10
 PIE 5ms : pie_5
 PIE 1ms : pie_1
 FQ Codel : fqcodel
+FQ Codel CE 2 : fqcodel_ce2
+FQ Codel CE 4 : fqcodel_ce4
+FQ Codel CE 6 : fqcodel_ce6
+FQ Codel CE 12 : fqcodel_ce12 
 RED : red_ecn
 RED without ECN : red
 DualQ Coupled AQM : dualq
