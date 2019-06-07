@@ -1,70 +1,65 @@
 #!/bin/bash
 
-IFACE=""
-SRC_NET=""
-PCAPFILTER=""
-SERVER_A=""
-SERVER_B=""
-CLIENT_A=""
-CLIENT_B=""
+set -ex
 
-if [ "$IFACE"=="" ] || [ "$SRC_NET"=="" ] || [ "$PCAPFILTER"=="" ] || [ "$PCAPFILTER"=="" ] ||
-	[ "$SERVER_B"=="" ] || [ "$CLIENT_A"=="" ] || [ "$CLIENT_B"=="" ]; then
-        echo "Input variables at the top of this script should be filled out to continue."
-        exit 65
-fi
+source $(dirname $0)/environment.sh
+
+for unit in 'apt-daily.timer' 'apt-daily-upgrade.timer'; do
+	sudo systemctl disable --now $unit
+done
+sudo systemctl daemon-reload
+sudo systemd-run --property="After=apt-daily.service apt-daily-upgrade.service" --wait /bin/true
+sudo env DEBIAN_FRONTEND=noninteractive \
+ 	apt-get -y purge unattended-upgrades
+sudo env DEBIAN_FRONTEND=noninteractive \
+	apt-get -y update
+sudo env DEBIAN_FRONTEND=noninteractive \
+	 apt-get -y \
+		 -o Dpkg::Options::="--force-confdef" \
+                 -o Dpkg::Options::="--force-confold" \
+	  install \
+		mesa-common-dev libgl1-mesa-dev \
+		libpcap-dev libelf-dev gcc build-essential flex \
+		bison automake autotools-dev autoconf libsm-dev \
+		linux-headers-generic pkg-config libmnl-dev \
+		libxrender1 libfontconfig1 libxi6
 
 echo "Building and loading qdisc modules"
 # build and load qdisc modules
 ./qdisc_modules_init.sh
 
 echo "Building iproute2"
-(cd iproute2-l4s && make)
-
-# set up ssh keys
-echo "Setting up servers and clients"
-mkdir -p $HOME/.ssh
-chmod 0700 $HOME/.ssh
-
-ssh-keygen -t rsa
-
-## First create .ssh directory on each machine ##
-for machine in "$CLIENT_A" "$CLIENT_B" "$SERVER_A" "$SERVER_B"; do
-	ssh $machine "umask 077; test -d .ssh || mkdir .ssh"
-	## cat local id.rsa.pub file and pipe over ssh to append the public key in remote machine ##
-	cat $HOME/.ssh/id_rsa.pub | ssh $machine "cat >> .ssh/authorized_keys"
-	## copy traffic generator data
-	scp -r traffic_generator $machine:.
-done
-
-## This might not be necessary
-eval $(ssh-agent)
-ssh-add
-
-# compile client traffic generator
-for client in "$CLIENT_A" "$CLIENT_B"; do
-	ssh $client "cd traffic_generator/http_client; make; cd ../dl_client; make; cp ../gen_rsample/rit*.txt ~/."
-done
-
-# compile server traffic generator
-for server in "$SERVER_A" "$SERVER_B"; do
-	ssh $server "cd traffic_generator/http_server; make; cd ../dl_server; make; cp ../gen_rsample/rs*.txt ~/."
-done
-
-# install dependencies 
-sudo apt-get install mesa-common-dev libgl1-mesa-dev libpcap-dev libelf-dev
+rm -rf iproute2-l4s
+git clone git://git.kernel.org/pub/scm/network/iproute2/iproute2.git iproute2-l4s
+pushd iproute2-l4s/
+git checkout v$(uname -r | awk -F '.' '{ printf "%d.%d.0", $1, $2 }')
+cp ../dualpi2.patch .
+git apply dualpi2.patch
+make -j$(nproc)
+popd
 
 # install Qt 5.0.1 - has to be this version to build qwt
 echo "Installing Qt - proceed with the dialog when prompted."
-wget https://download.qt.io/archive/qt/5.0/5.0.1/qt-linux-opensource-5.0.1-x86_64-offline.run
-mv qt-linux-opensource-5.0.1-x86_64-offline.run qt-qwt/.
-chmod +x qt-qwt/qt-linux-opensource-5.0.1-x86_64-offline.run
-qt-qwt/qt-unified-linux-x64-3.1.0-online.run
+QT_VERSION=qt-linux-opensource-5.0.1-x86_64-offline.run
+QT_INSTALLER=qt-qwt/$QT_VERSION
+if [ ! -x $QT_INSTALLER ]; then
+	curl https://download.qt.io/archive/qt/5.0/5.0.1/$QT_VERSION -o $QT_INSTALLER
+	chmod +x $QT_INSTALLER
+fi
+if [ ! -x /home/$(whoami)/Qt5.0.1/5.0.1/gcc_64/bin/qmake ]; then
+	$QT_INSTALLER
+fi
 
 # install qwt
 echo "Installing qwt."
-tar -xvf qt-qwt/qwt-6.1.0.tar.bz2 --directory=/home/$(whoami)/Qt5.0.1
-(cd /home/$(whoami)/Qt5.0.1/qwt-6.1.4/ && /home/$(whoami)/Qt5.0.1/5.0.1/gcc_64/bin/qmake qwt.pro && make)
+QWT_DIR=/home/$(whoami)/Qt5.0.1/qwt-6.1.4/
+if [ ! -d $QWT_DIR ]; then
+	tar -xvf qt-qwt/qwt-6.1.4.tar.bz2 --directory=/home/$(whoami)/Qt5.0.1
+fi
+pushd $QWT_DIR
+/home/$(whoami)/Qt5.0.1/5.0.1/gcc_64/bin/qmake qwt.pro
+make -j$(nproc)
+popd
 
 # add to library path for all users, so that L4SDemo can access it after it gets root permissions
 echo "/home/$(whoami)/Qt5.0.1/qwt-6.1.4/lib" > qwt.conf
@@ -72,16 +67,18 @@ sudo mv qwt.conf /etc/ld.so.conf.d/.
 sudo ldconfig
 
 # build traffic analyzer
-(cd traffic_analyzer && make)
+pushd traffic_analyzer
+make -j$(nproc)
+popd
 
-# build GUI
-"Building GUI."
-cd demo
-/home/$(whoami)/Qt5.0.1/5.0.1/gcc_64/bin/qmake && make
+# build GUI and set permissions to capture on the interface
+echo "Building GUI."
+pushd demo
+/home/$(whoami)/Qt5.0.1/5.0.1/gcc_64/bin/qmake
+make -j$(nproc)
+popd
 
-# set permissions to capture on the interface
-sh/setcap
-
-# Start demo
-./L4SDemo
-
+# set up ssh keys
+echo "Setting up servers and clients"
+mkdir -p $HOME/.ssh
+chmod 0700 $HOME/.ssh

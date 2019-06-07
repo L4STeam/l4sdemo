@@ -1,4 +1,5 @@
 #include "linkaqm.h"
+#include "resources.h"
 #include <QColor>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -336,7 +337,10 @@ void Linkaqm::updateAQM(int num)
     std::stringstream command;
     int linkindex = linkselect->currentIndex();
     int brttindex = brttselect->currentIndex();
-    command << "./sh/set_aqm_link.sh " << aqmIDList.at(num) << " " << linkCapValues.at(linkindex) << " " << brttValues.at(brttindex);
+    command << res_path("/sh/set_aqm_link.sh") << " "
+	    << aqmIDList.at(num) << " " 
+	    << linkCapValues.at(linkindex) << " "
+	    << brttValues.at(brttindex);
     system(command.str().c_str());
 
 }
@@ -346,7 +350,10 @@ void Linkaqm::updateLink(int num)
     std::stringstream command;
     int aqmindex = aqmselect->currentIndex();
     int brttindex = brttselect->currentIndex();
-    command << "./sh/set_aqm_link.sh " << aqmIDList.at(aqmindex) << " " << linkCapValues.at(num) << " " << brttValues.at(brttindex);
+    command << res_path("/sh/set_aqm_link.sh") << " "
+	    << aqmIDList.at(aqmindex) << " "
+	    << linkCapValues.at(num) << " "
+	    << brttValues.at(brttindex);
     system(command.str().c_str());
     linkChanged(linkCapValues.at(num));
 }
@@ -356,7 +363,10 @@ void Linkaqm::updateBrtt(int num)
     std::stringstream command;
     int aqmindex = aqmselect->currentIndex();
     int linkindex = linkselect->currentIndex();
-    command << "./sh/set_aqm_link.sh " << aqmIDList.at(aqmindex) << " " << linkCapValues.at(linkindex) << " " << brttValues.at(num);
+    command << res_path(".sh/set_aqm_link.sh") << " "
+	    << aqmIDList.at(aqmindex) << " "
+	    << linkCapValues.at(linkindex) << " "
+	    << brttValues.at(num);
     system(command.str().c_str());
     brttChanged(brttValues.at(num));
 }
@@ -382,7 +392,7 @@ void Linkaqm::updatePlotScale(HistoryPlot *plot, int num)
 }
 
 void Linkaqm::readAQMList(){
-    std::ifstream infile("./config/aqm_list");
+    std::ifstream infile(res_path( "/config/aqm_list"));
     if (infile.is_open()) {
         std::string aqm_name;
         std::string aqm_command;
@@ -407,7 +417,7 @@ void Linkaqm::readAQMList(){
 }
 
 void Linkaqm::readLinkCapList(){
-    std::ifstream infile("./config/link_cap_list");
+    std::ifstream infile(res_path("/config/link_cap_list"));
     if (infile.is_open()) {
         std::string link_cap;
         int linkCapValue;
@@ -426,7 +436,7 @@ void Linkaqm::readLinkCapList(){
 
 void Linkaqm::readBrttList()
 {
-    std::ifstream infile("./config/brtt_list");
+    std::ifstream infile(res_path( "/config/brtt_list"));
     if (infile.is_open()) {
         std::string rtt;
         int rttValue;

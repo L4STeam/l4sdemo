@@ -1,4 +1,5 @@
 #include "client.h"
+#include "resources.h"
 #include <qwt_scale_draw.h>
 #include <qwt_scale_widget.h>
 #include <qwt_plot_marker.h>
@@ -434,7 +435,7 @@ void Client::updateWebBrowsing100(bool toggled)
 }
 
 void Client::readRTTList(){
-    std::ifstream infile("./config/ertt_list");
+    std::ifstream infile(res_path("/config/ertt_list"));
     if (infile.is_open()) {
         std::string rtt;
         int rttValue = -1;
@@ -457,7 +458,7 @@ void Client::readCBRList(){
     cbrList.append("off");
     cbrValues.push_back(cbrValue);
 
-    std::ifstream infile("./config/cbr_list");
+    std::ifstream infile(res_path("/config/cbr_list"));
     if (infile.is_open()) {
        while (!infile.eof()) {
             infile >> cbr;
@@ -474,7 +475,7 @@ void Client::readCBRList(){
 
 void Client::readCCList()
 {
-    std::ifstream infile("./config/cc_list");
+    std::ifstream infile(res_path("/config/cc_list"));
     if (infile.is_open()) {
         std::string cc_name;
         std::string cc_command;

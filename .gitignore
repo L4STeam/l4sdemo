@@ -1,0 +1,10 @@
+*.o
+moc_*
+qt-qwt/qt-linux-opensource-5.0.1-x86_64-offline.run
+*.a
+analyzer
+L4SDemo
+.cache.mk
+demo/Makefile
+dl_client
+dl_server

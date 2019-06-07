@@ -1,7 +1,10 @@
 #include "datagenerator.h"
+#include "resources.h"
 
 #include <iostream>
+#include <cstdlib>
 #include <unistd.h>
+
 DataGenerator::DataGenerator(Client *dctcpclient, Client *cubicclient, Linkaqm *linkaqm)
     : m_dctcpclient(dctcpclient)
     , m_cubicclient(cubicclient)
@@ -34,19 +37,11 @@ void DataGenerator::startTA(bool ipc)
     char ipclass = 'f';
     if (ipc)
         ipclass = 't';
-    FILE *pf = popen("echo $PCAPFILTER", "r");
-    char buf_pf[50];
-    fgets(buf_pf, sizeof(buf_pf), pf);
-    std::cout << "PCAPFILTER: " << buf_pf << std::endl;
 
-    FILE *d = popen("echo $IFACE", "r");
-    char buf_d[10];
-    fgets(buf_d, sizeof(buf_d), d);
-    buf_d[strlen(buf_d)-1] = '\0';
-    std::cout << "INTERFACE: " << buf_d << "." << std::endl;
-
-    std::string pcapf = buf_pf;
-    char *dev = buf_d;
+    std::string pcapf = safe_getenv("PCAPFILTER");
+    std::cout << "PCAPFILTER: " << pcapf << std::endl;
+    std::string dev = safe_getenv("IFACE");
+    std::cout << "INTERFACE: " << dev << std::endl;
 
     tp = new ThreadParam(sinterval, folder, true, nrs);
     setThreadParam(tp);
@@ -62,7 +57,7 @@ void DataGenerator::startTA(bool ipc)
     tastat->moveToThread(tastatThread);
     connect(tastatThread, SIGNAL(started()), tastat, SLOT(start()));
 
-    setup_pcap(tp, dev, pcapf);
+    setup_pcap(tp, dev.c_str(), pcapf);
     taThread->start();
     tastatThread->start();
 }

@@ -3,20 +3,7 @@
 RENOSERVER=$SERVER_B
 RENOCLIENT=$CLIENT_B
 
-TESTBED=$(ifconfig | grep 192.168.200.211)
-if [ "$TESTBED" != "" ]; then
-	TESTBED="simula"
-	AQMNODE="192.168.200.211"
-else
-	TESTBED=$(ifconfig | grep 192.168.200.2)
-	if [ "$TESTBED" != "" ]; then
-		TESTBED="alu"
-		AQMNODE="10.187.16.1"
-	else
-		TESTBED="demo"
-		AQMNODE="10.187.16.1"
-	fi
-fi
+TESTBED=demo
 RENOPORT="11001"
 PATH_TO_TRAFFIC_GENERATOR="traffic_generator"
 

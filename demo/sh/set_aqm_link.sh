@@ -4,6 +4,8 @@ if [ "$#" != "3" ]; then
 	exit 65
 fi
 
+HERE=$(dirname $0)
+
 aqm=$1
 link=$2
 brtt=$3
@@ -13,23 +15,14 @@ RENOSERVER=$SERVER_B
 DCTCPCLIENT=$CLIENT_A
 RENOCLIENT=$CLIENT_B
 
-TESTBED=$(ifconfig | grep 192.168.200.211)
-if [ "$TESTBED" != "" ]; then
-    TESTBED="simula"
-else
-    TESTBED=$(ifconfig | grep 192.168.200.2)
-    if [ "$TESTBED" != "" ]; then
-        TESTBED="alu"
-    else
-        TESTBED="demo"
-    fi
-fi
+TESTBED="demo"
 
 echo "Testbed is $TESTBED"
 
-do_exec() {
-	echo $1
-	$1
+do_tc() {
+	local cmd="sudo $HERE/../../iproute2-l4s/tc/tc $1"
+	echo $cmd
+	$cmd
 }
 
 set_aqm() {
@@ -51,48 +44,48 @@ set_aqm() {
 	fi
 
 	echo "# setting $aqmname2 $aqmpars"
-	do_exec "sudo ../iproute2-l4s/tc/tc qdisc del dev $iface root"
-	do_exec "sudo ../iproute2-l4s/tc/tc qdisc add dev $iface root handle 1: htb default 5"
-	do_exec "sudo ../iproute2-l4s/tc/tc class add dev $iface parent 1: classid 1:5 htb rate ${ctrlrate}Mbit"
-	do_exec "sudo ../iproute2-l4s/tc/tc class add dev $iface parent 1: classid 1:10 htb rate ${rate}Mbit ceil ${rate}Mbit burst 1516"
-	do_exec "sudo ../iproute2-l4s/tc/tc filter add dev $iface protocol ip parent 1:0 prio 1 u32 match ip src ${DCTCPSERVER}/24 flowid 1:10"
-#	do_exec "sudo ../iproute2-l4s/tc/tc filter add dev $iface protocol ip parent 1:0 prio 1 u32 match ip src ${DCTCPSERVER} flowid 1:10"
-#	do_exec "sudo ../iproute2-l4s/tc/tc filter add dev $iface protocol ip parent 1:0 prio 1 u32 match ip src ${RENOSERVER} flowid 1:10"
+	do_tc "qdisc del dev $iface root"
+	do_tc "qdisc add dev $iface root handle 1: htb default 5"
+	do_tc "class add dev $iface parent 1: classid 1:5 htb rate ${ctrlrate}Mbit"
+	do_tc "class add dev $iface parent 1: classid 1:10 htb rate ${rate}Mbit ceil ${rate}Mbit burst 1516"
+	do_tc "filter add dev $iface protocol ip parent 1:0 prio 1 u32 match ip src ${DCTCPSERVER}/24 flowid 1:10"
+#	do_tc "filter add dev $iface protocol ip parent 1:0 prio 1 u32 match ip src ${DCTCPSERVER} flowid 1:10"
+#	do_tc "filter add dev $iface protocol ip parent 1:0 prio 1 u32 match ip src ${RENOSERVER} flowid 1:10"
 #	if [ "$TESTBED" == "demo" ]; then
-#		do_exec "sudo ../iproute2-l4s/tc/tc filter add dev $iface protocol ip parent 1:0 prio 1 u32 match ip src 10.187.255.204 flowid 1:10"
-#		do_exec "sudo ../iproute2-l4s/tc/tc filter add dev $iface protocol ip parent 1:0 prio 1 u32 match ip src 10.187.255.208 flowid 1:10"
-#		do_exec "sudo ../iproute2-l4s/tc/tc filter add dev $iface protocol ip parent 1:0 prio 1 u32 match ip src 10.187.255.215 flowid 1:10"
-#		do_exec "sudo ../iproute2-l4s/tc/tc filter add dev $iface protocol ip parent 1:0 prio 1 u32 match ip src 10.187.255.213 flowid 1:10"
-#		do_exec "sudo ../iproute2-l4s/tc/tc filter add dev $iface protocol ip parent 1:0 prio 1 u32 match ip src 10.187.255.100 flowid 1:10"
+#		do_tc "filter add dev $iface protocol ip parent 1:0 prio 1 u32 match ip src 10.187.255.204 flowid 1:10"
+#		do_tc "filter add dev $iface protocol ip parent 1:0 prio 1 u32 match ip src 10.187.255.208 flowid 1:10"
+#		do_tc "filter add dev $iface protocol ip parent 1:0 prio 1 u32 match ip src 10.187.255.215 flowid 1:10"
+#		do_tc "filter add dev $iface protocol ip parent 1:0 prio 1 u32 match ip src 10.187.255.213 flowid 1:10"
+#		do_tc "filter add dev $iface protocol ip parent 1:0 prio 1 u32 match ip src 10.187.255.100 flowid 1:10"
 #	fi
 
 	#set extra rtt
 	if [ "$TESTBED" == "simula" ]; then
-		do_exec "sudo ../iproute2-l4s/tc/tc qdisc del dev enp2s0f2 root"
-		do_exec "sudo ../iproute2-l4s/tc/tc qdisc del dev enp2s0f3 root"
+		do_tc "qdisc del dev enp2s0f2 root"
+		do_tc "qdisc del dev enp2s0f3 root"
 
-		do_exec "sudo ../iproute2-l4s/tc/tc qdisc add dev enp2s0f2 root netem delay ${rtt2}.0ms limit 40000"
-		do_exec "sudo ../iproute2-l4s/tc/tc qdisc add dev enp2s0f3 root netem delay ${rtt2}.0ms limit 40000"
+		do_tc "qdisc add dev enp2s0f2 root netem delay ${rtt2}.0ms limit 40000"
+		do_tc "qdisc add dev enp2s0f3 root netem delay ${rtt2}.0ms limit 40000"
 	else
-		do_exec "sudo ../iproute2-l4s/tc/tc qdisc del dev eth1 root"
-		do_exec "sudo ../iproute2-l4s/tc/tc qdisc add dev eth1 root netem delay ${rtt2}.0ms limit 40000"
-		#do_exec "sudo ../iproute2-l4s/tc/tc qdisc del dev eth1 root"
-		#do_exec "sudo ../iproute2-l4s/tc/tc qdisc add dev eth1 root handle 1: prio"
-		#do_exec "sudo ../iproute2-l4s/tc/tc class add dev eth1 parent 1: classid 1:5 netem delay ${rtt2}.0ms"
-		#do_exec "sudo ../iproute2-l4s/tc/tc class add dev eth1 parent 1: classid 1:10 netem delay 20.0ms"
-		#do_exec "sudo ../iproute2-l4s/tc/tc filter add dev eth1 protocol ip parent 1:0 prio 2 u32 match ip src 10.187.255.213 flowid 1:10"
-		#do_exec "sudo ../iproute2-l4s/tc/tc filter add dev eth1 protocol ip parent 1:0 prio 1 flowid 1:5"
+		do_tc "qdisc del dev ${REV_IFACE} root"
+		do_tc "qdisc add dev ${REV_IFACE} root netem delay ${rtt2}.0ms limit 40000"
+		#do_tc "qdisc del dev ${REV_IFACE} root"
+		#do_tc "qdisc add dev ${REV_IFACE} root handle 1: prio"
+		#do_tc "class add dev ${REV_IFACE} parent 1: classid 1:5 netem delay ${rtt2}.0ms"
+		#do_tc "class add dev ${REV_IFACE} parent 1: classid 1:10 netem delay 20.0ms"
+		#do_tc "filter add dev ${REV_IFACE} protocol ip parent 1:0 prio 2 u32 match ip src 10.187.255.213 flowid 1:10"
+		#do_tc "filter add dev ${REV_IFACE} protocol ip parent 1:0 prio 1 flowid 1:5"
 	fi
 
-	do_exec "../iproute2-l4s/tc/tc qdisc"
+	do_tc "qdisc"
 
 	#if [[ "$aqm" == *"_ori"* ]]; then
-	#	do_exec "sudo ../iproute2-l4s/tc/tc_working qdisc add dev $iface parent 1:10 $aqmname2 $aqmpars"
+	#	do_tc "sudo ../../iproute2-l4s/tc/tc_working qdisc add dev $iface parent 1:10 $aqmname2 $aqmpars"
 	#else
-		do_exec "sudo ../iproute2-l4s/tc/tc qdisc add dev $iface parent 1:10 $aqmname2 limit 40000 $aqmpars"
+		do_tc "qdisc add dev $iface parent 1:10 $aqmname2 limit 40000 $aqmpars"
 	#fi
 
-	do_exec "../iproute2-l4s/tc/tc qdisc"
+	do_tc "qdisc"
 }
 
 log(){ local x=$1 n=2 l=-1;if [ "$2" != "" ];then n=$x;x=$2;fi;while((x));do let l+=1 x/=n;done;echo $l; }

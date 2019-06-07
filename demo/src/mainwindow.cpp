@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "resources.h"
 
 #include "client.h"
 #include "linkaqm.h"
@@ -14,6 +15,7 @@
 #include <QPushButton>
 #include <iostream>
 #include <sstream>
+#include <cstdlib>
 
 MainWindow::MainWindow(QWidget *parent)
     : QWidget(parent)
@@ -28,29 +30,36 @@ MainWindow::MainWindow(QWidget *parent)
     std::stringstream dctcpTitle;
     std::stringstream cubicTitle;
 
-    FILE *dc = popen("echo $CLIENT_A", "r");
-    char buf_dc[50];
-    while (fgets(buf_dc, sizeof(buf_dc), dc) != 0)
-        std::cout << "Client A: " << buf_dc << std::endl;
-    pclose(dc);
+    std::string client_a = safe_getenv("CLIENT_A");
+    std::cout << "Client A: " << client_a << std::endl;
+    dctcpTitle << "Client A IP: " << client_a << " .";
 
-    FILE *cc = popen("echo $CLIENT_B", "r");
-    char buf_cc[50];
-    while (fgets(buf_cc, sizeof(buf_cc), cc) != 0)
-        std::cout << "Client B: " << buf_cc << std::endl;
-    pclose(cc);
+    std::string client_b = safe_getenv("CLIENT_B");
+    std::cout << "Client B: " << client_b << std::endl;
+    cubicTitle << "Client B IP: " << client_b << " .";
 
-    dctcpTitle << "Client IP:" << buf_dc << " .";
-
-    cubicTitle << "Client IP: " << buf_cc << " .";
-    Client *dctcpclient = new Client(this, "./sh/start_dctcp_download.sh", "./sh/killall_dctcp.sh", "./sh/killdownload_dctcp.sh", "./sh/wb_dctcp.sh ",
-                                    "./sh/rtt_dctcp.sh","./sh/cc_dctcp.sh", "./sh/al_dctcp.sh", "./sh/cbr_dctcp.sh", Qt::blue);
+    Client *dctcpclient = new Client(this,
+		    res_path("/sh/start_dctcp_download.sh").c_str(),
+		    res_path("/sh/killall_dctcp.sh").c_str(),
+		    res_path("/sh/killdownload_dctcp.sh").c_str(),
+		    res_path("/sh/wb_dctcp.sh ").c_str(),
+		    res_path("/sh/rtt_dctcp.sh").c_str(),
+		    res_path("/sh/cc_dctcp.sh").c_str(), 
+		    res_path("/sh/al_dctcp.sh").c_str(), 
+		    res_path("/sh/cbr_dctcp.sh").c_str(), Qt::blue);
     dctcpclient->setTitle(dctcpTitle.str().c_str());
     dctcpclient->updateCC(0);
     firstColumn->addWidget(dctcpclient);
     firstColumn->setAlignment(dctcpclient, Qt::AlignTop);
-    Client *cubicclient = new Client(this, "./sh/start_cubic_download.sh", "./sh/killall_cubic.sh", "./sh/killdownload_cubic.sh","./sh/wb_cubic.sh ",
-                                    "./sh/rtt_cubic.sh", "./sh/cc_cubic.sh", "./sh/al_cubic.sh","./sh/cbr_cubic.sh", QColor(255, 157, 0));
+    Client *cubicclient = new Client(this, 
+		    res_path("/sh/start_cubic_download.sh").c_str(), 
+		    res_path("/sh/killall_cubic.sh").c_str(),
+		    res_path("/sh/killdownload_cubic.sh").c_str(),
+		    res_path("/sh/wb_cubic.sh ").c_str(), 
+		    res_path("/sh/rtt_cubic.sh").c_str(),
+		    res_path("/sh/cc_cubic.sh").c_str(),
+		    res_path("/sh/al_cubic.sh").c_str(),
+		    res_path("/sh/cbr_cubic.sh").c_str(), QColor(255, 157, 0));
     cubicclient->setTitle(cubicTitle.str().c_str());
     cubicclient->updateCC(1);
     firstColumn->addWidget(cubicclient);
@@ -67,8 +76,6 @@ MainWindow::MainWindow(QWidget *parent)
     toggleRWBoxLayout->addWidget(br);
     toggleRWBoxLayout->addWidget(bw);
     optionsLayout->addWidget(toggleRWBox);
-
-
 
     QHBoxLayout *complOptLayout = new QHBoxLayout;
     QGroupBox *toggleComplHSBox = new QGroupBox;
@@ -174,8 +181,8 @@ void MainWindow::checkCC()
 
 int MainWindow::checkIfUp(const char* ip)
 {
-    std::string command = "./sh/check_if_up.sh ";
-	command = command + ip;
-	int res = system(command.c_str());
-	return res/256;	
+    std::string command = res_path("/sh/check_if_up.sh");
+    command = command + " " + ip;
+    int res = system(command.c_str());
+    return res/256;	
 }

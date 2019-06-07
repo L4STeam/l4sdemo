@@ -8,7 +8,7 @@ QT       += core gui widgets
 
 TARGET = L4SDemo
 CONFIG   -= app_bundle
-CONFIG += c++11
+CONFIG += c++11 debug
 TEMPLATE = app
 
 
@@ -38,7 +38,8 @@ HEADERS += \
     src/compltimesocket.h \
     src/linkaqm.h \
     src/demodata.h \
-    src/trafficanalyzerstat.h
+    src/trafficanalyzerstat.h \
+    src/resources.h
 
 INCLUDEPATH += ../../Qt5.0.1/qwt-6.1.4/src
 INCLUDEPATH += ../traffic_analyzer
@@ -46,3 +47,4 @@ INCLUDEPATH += ../traffic_analyzer
 LIBS += -L../../Qt5.0.1/qwt-6.1.4/lib -lqwt
 LIBS += -L../traffic_analyzer -lta -lpcap
 
+QMAKE_POST_LINK += sh/setcap.sh

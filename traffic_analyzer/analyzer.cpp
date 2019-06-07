@@ -222,7 +222,7 @@ void printStreamInfo(SrcDst sd)
     std::cout << IPtoString(sd.m_dstip) << ":" << sd.m_dstport;
 }
 
-int setup_pcap(ThreadParam *param, char *dev, std::string &pcapfilter) 
+int setup_pcap(ThreadParam *param, const char *dev, std::string &pcapfilter) 
 {
     char errbuf[PCAP_ERRBUF_SIZE];
     pcap_t *descr;
