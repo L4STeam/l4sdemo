@@ -19,7 +19,7 @@ void TrafficAnalyzerStat::getQSStat()
     for (int i = 0; i < QS_LIMIT; ++i) {
          if (tp->db2->qs.ecn00[i] > 0 || tp->db2->qs.ecn01[i] > 0 || tp->db2->qs.ecn10[i] > 0 || tp->db2->qs.ecn11[i] > 0) {
              qs_nonecn_tot += tp->db2->qs.ecn00[i]*tp->qdelay_decode_table[i];
-             for (int j = 0; j < tp->db2->qs.ecn00[i]; ++j) {
+             for (uint32_t j = 0; j < tp->db2->qs.ecn00[i]; ++j) {
                  int qdelay = tp->qdelay_decode_table[i];
                  qs_nonecn.push_back(qdelay);
                  int index = (int)round((double)qdelay/1000);
@@ -27,7 +27,7 @@ void TrafficAnalyzerStat::getQSStat()
                     dd->c_qsize_y.at((int)round((double)qdelay/1000))++;
              }
              qs_ecn_tot += (tp->db2->qs.ecn01[i] + tp->db2->qs.ecn10[i] + tp->db2->qs.ecn11[i])*tp->qdelay_decode_table[i];
-             for (int j = 0; j < (tp->db2->qs.ecn01[i] + tp->db2->qs.ecn10[i] + tp->db2->qs.ecn11[i]); ++j){
+             for (uint32_t j = 0; j < (tp->db2->qs.ecn01[i] + tp->db2->qs.ecn10[i] + tp->db2->qs.ecn11[i]); ++j){
                  int qdelay = tp->qdelay_decode_table[i];
                  qs_ecn.push_back(qdelay);
                  int index = (int)round((double)qdelay/1000);
@@ -61,21 +61,19 @@ void TrafficAnalyzerStat::getQSStat()
     // normalise to show inverted qs CDF in %
     if (nrsamples_nonecn > 0) {
         double prev = 0;
-        for (auto it = dd->c_qsize_y.begin(); it != dd->c_qsize_y.end(); ++it)
-            if (*it > 0) {
+        for (auto it = dd->c_qsize_y.begin(); it != dd->c_qsize_y.end(); ++it) {
                 *it = *it * 100 / nrsamples_nonecn + prev;
                 prev = *it;
                 *it = 100 - *it;
-            }
+        }
     }
     if (nrsamples_ecn > 0) {
         double prev = 0;
-        for (auto it = dd->ll_qsize_y.begin(); it != dd->ll_qsize_y.end(); ++it)
-            if (*it > 0) {
+        for (auto it = dd->ll_qsize_y.begin(); it != dd->ll_qsize_y.end(); ++it) {
                 *it = *it * 100 / nrsamples_ecn + prev;
                 prev = *it;
                 *it = 100 - *it;
-            }
+	}
     }
 }
 
@@ -84,6 +82,8 @@ void TrafficAnalyzerStat::calcWindow(std::vector<double> *th, std::vector<double
     int flowid = 0;
     for (auto flow = th->begin(); flow != th->end(); ++flow){
         double window = *flow *(avg_qs + rtt)*100/dd->fair_window;
+	printf("fair window %lf\n", window);
+	printf("rtt: %lf\n", rtt);
         w->at(flowid++) = window;
         *flow = *flow*100/dd->fair_rate;
     }
@@ -178,15 +178,15 @@ void TrafficAnalyzerStat::getRateDropMarkStat()
     dd->cbrrate_ecn = dd->cbrrate_ecn * 100 / dd->linkcap;
     dd->cbrrate_nonecn = dd->cbrrate_nonecn * 100 / dd->linkcap;
 
-    // Convert to Mbps
-    dd->fair_rate /= 1000000;
+    // Convert to Mbps from bytes per sec (value * 8 / 1000000)
+    dd->fair_rate /= 125000;
     // Convert to Kb
     dd->fair_window /= 1000;
 }
 
 void TrafficAnalyzerStat::start()
 {
-    uint64_t time_ms, elapsed, next, sleeptime;
+    uint64_t time_ms, elapsed, next;
 
     // first run
     // to get accurate results we swap the database and initialize timers here

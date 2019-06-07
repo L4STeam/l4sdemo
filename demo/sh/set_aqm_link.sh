@@ -163,7 +163,19 @@ elif [[ $aqm == "pi2_5" ]]; then
 elif [[ $aqm == "pi2_1" ]]; then
         set_aqm pi2 "$r_default ecn target 1ms ecn alpha $a_default beta $b_default tupdate $u_default k $k_default" $brtt $link
 elif [[ $aqm == "dpi2" ]]; then
-		set_aqm dualpi2 "dc_dualq" $brtt $link
+		set_aqm dualpi2 "" $brtt $link
+elif [[ $aqm == "dpi2_dc" ]]; then
+                set_aqm dualpi2 "dc_dualq dc_ecn" $brtt $link
+elif [[ $aqm == "dpi2_dc_lthresh4" ]]; then
+                set_aqm dualpi2 "dc_dualq dc_ecn l_thresh 4.0ms" $brtt $link
+elif [[ $aqm == "dpi2_dc_lthresh6" ]]; then
+                set_aqm dualpi2 "dc_dualq dc_ecn l_thresh 6.0ms" $brtt $link
+elif [[ $aqm == "dpi2_dc_wrr10" ]]; then
+                set_aqm dualpi2 "dc_dualq dc_ecn t_shift 0 wrr_ratio 10" $brtt $link
+elif [[ $aqm == "dpi2_dc_wrr10lthresh6" ]]; then
+                set_aqm dualpi2 "dc_dualq dc_ecn t_shift 0 wrr_ratio 10 l_thresh 6.0ms" $brtt $link
+elif [[ $aqm == "dpi2_dc_wrr10lthresh6ldrop25" ]]; then
+                set_aqm dualpi2 "dc_dualq dc_ecn t_shift 0 wrr_ratio 10 l_thresh 6.0ms l_drop 25" $brtt $link
 elif [[ $aqm == "dpi2_40" ]]; then
         set_aqm dualpi2 "$r_default target 40ms alpha $a_default beta $b_default tupdate $u_default k $k_default t_shift 80ms" $brtt $link
 elif [[ $aqm == "dpi2_20" ]]; then
@@ -190,4 +202,12 @@ elif [[ $aqm == "dpi2_ecnth4_dc" ]]; then
         set_aqm pi2 "$r_default dualq target 20ms alpha $a_default beta $b_default tupdate $u_default k $k_default l_thresh 4000 t_shift 40ms " $brtt $link
 elif [[ $aqm == "fqcodel" ]]; then
         set_aqm fqcodel "ecn" $brtt $link
+elif [[ $aqm == "fqcodel_ce2" ]]; then
+        set_aqm fqcodel "ecn ce_threshold 2ms" $brtt $link
+elif [[ $aqm == "fqcodel_ce4" ]]; then
+        set_aqm fqcodel "ecn ce_threshold 4ms" $brtt $link
+elif [[ $aqm == "fqcodel_ce6" ]]; then
+        set_aqm fqcodel "ecn ce_threshold 6ms" $brtt $link
+elif [[ $aqm == "fqcodel_ce12" ]]; then
+        set_aqm fqcodel "ecn ce_threshold 12ms" $brtt $link
 fi
