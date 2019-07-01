@@ -19,3 +19,5 @@ modules.order
 Modules.symvers
 *.mod.c
 
+Module.symvers
+*.ur-safe
