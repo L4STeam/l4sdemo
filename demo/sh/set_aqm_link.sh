@@ -21,7 +21,7 @@ do_tc() {
 	$cmd
 }
 
-set_aqm() {
+__set_aqm() {
 	aqmname2=$1
 	aqmpars="$2"
 	declare -i rtt2=$3
@@ -37,7 +37,7 @@ set_aqm() {
     do_tc "qdisc del dev ${REV_IFACE} root"
     do_tc "qdisc add dev ${REV_IFACE} root netem delay ${rtt2}.0ms limit 40000"
 
-	do_tc "qdisc add dev $iface parent 1:10 $aqmname2 limit 40000 $aqmpars"
+	do_tc "qdisc add dev $iface parent 1:10 $aqmname2 $aqmpars"
 
 	do_tc "qdisc show"
 }
@@ -45,7 +45,11 @@ set_aqm() {
 set_taildrop() {
     local delay=$1
     # the limit is in bytes
-    set_aqm taildrop "limit $((rate * 1000 / delay / 8))"
+    set_aqm taildrop "limit $((rate * 1000000 / delay / 1000 / 8))b"
+}
+
+set_aqm() {
+    set_aqm "$1" "$2 limit 40000"
 }
 
 if [[ $aqm == "dpi2" ]]; then
