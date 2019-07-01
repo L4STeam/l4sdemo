@@ -82,8 +82,7 @@ void TrafficAnalyzerStat::calcWindow(std::vector<double> *th, std::vector<double
     int flowid = 0;
     for (auto flow = th->begin(); flow != th->end(); ++flow){
         double window = *flow *(avg_qs + rtt)*100/dd->fair_window;
-	printf("fair window %lf\n", window);
-	printf("rtt: %lf\n", rtt);
+	printf("fair window %lf\trtt: %lf\n", window, rtt);
         w->at(flowid++) = window;
         *flow = *flow*100/dd->fair_rate;
     }
@@ -222,7 +221,9 @@ void TrafficAnalyzerStat::start()
         int process_time = getStamp() - tp->db2->last;
         if (elapsed < next) {
             uint64_t sleeptime = next - elapsed;
-            printf("Processed data in approx. %d us - sleeping for %d us\n", (int) process_time, (int) sleeptime);
+	    if (process_time >= sleeptime)
+		printf("Processed data in approx. %d us - sleeping for %d us\n",
+		       (int) process_time, (int) sleeptime);
             wait(sleeptime * NSEC_PER_US);
         }
 

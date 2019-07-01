@@ -4,7 +4,7 @@ LDFLAGS = -lm -lpthread
 all: http_clients_itime
 
 http_clients_itime: http_clients_itime.c Makefile
-	$(CC)  http_clients_itime.c $(LDFLAGS) -o $@
+	$(CC)  http_clients_itime.c -g $(LDFLAGS) -o $@
 
 clean:
 	rm -rf http_clients_itime *.o

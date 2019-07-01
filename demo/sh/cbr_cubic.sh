@@ -8,8 +8,7 @@ RENOSERVER=$SERVER_B
 RENOCLIENT=$CLIENT_B
 
 rate=$1
-ssh ${RENOSERVER} 'killall iperf' &
+ssh ${RENOSERVER} 'killall iperf'
 if [ "$rate" != "0" ]; then
-	sleep 1
 	ssh ${RENOSERVER}  "iperf -c ${RENOCLIENT} -u -t 500 -b ${rate}m &" &
 fi

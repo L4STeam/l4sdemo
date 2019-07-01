@@ -45,6 +45,15 @@ int port; // port to connect to
 char *host; // host to connect to
 int number_of_clients;
 
+static void ms_sleep(int ms)
+{
+  struct timespec ts = {
+    .tv_sec = ms / 1000,
+    .tv_nsec = (ms % 1000) * 1000000
+  };
+  nanosleep(&ts, NULL);
+}
+
 /* A single client is represented and run by this thread function:
 
    The thread will connect to the server on the specified port
@@ -59,6 +68,7 @@ void run_client(){
   int read_data = 1;
   int received_bytes = 0;
   int r_rcv = 0;
+  int retries_left = 20; /* 2sec with 100ms in between each attempt */
 
   int err;
   char buffer[BUFFER_SIZE];
@@ -75,8 +85,14 @@ void run_client(){
   addr.sin_addr.s_addr = inet_addr(host);
 
   /* Connect to host */
-  if((err = connect(sock, (struct sockaddr *)&addr, sizeof addr)) < 0){
-    error("error connecting to server, thread exiting");  // stops/exits here
+  while ((err = connect(sock, (struct sockaddr *)&addr, sizeof addr)) < 0 &&
+          retries_left > 0){
+    --retries_left;
+    ms_sleep(100);
+  }
+  if (err < 0) {
+    error("error connecting to server, thread exiting");
+    return;
   }
 
   /* Read data for ever or fail */
@@ -133,7 +149,7 @@ int run_dlclients(){
               (void*)run_client, NULL)) != 0){
       error("pthread_create"); // stops/exits here
     }
-	
+
   }
   // end with blocking on last thread: call one instance in this thread
   run_client();

@@ -30,18 +30,16 @@ void initialize_distribution(char *filename){
   FILE* fd;
   int i = 0;
 
-  if ((fd = fopen(filename, "r")) < 0) {
+  if (!(fd = fopen(filename, "r"))) {
     perror("open");
     exit(1);
   }
 
   for(i=0; i < 100000; i++){
-    char r[30];
-    if (fscanf(fd, "%s", r) == 0) {
+    if (fscanf(fd, "%d", &samples[i]) <= 0) {
         perror("error reading samples");
         exit(1);
     }
-    samples[i] = atoi(r);
   }
   fclose(fd);
 }

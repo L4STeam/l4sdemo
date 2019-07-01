@@ -6,7 +6,6 @@ fi
 
 ip=$1
 tcp_cc=$2
-#ecn_cc='2'
 ecn_cc=0
 
 if [ "$tcp_cc" == "cubic_ecn" ]; then

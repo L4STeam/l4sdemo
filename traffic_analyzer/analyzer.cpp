@@ -25,7 +25,7 @@
 
 typedef u_int32_t u32; // we use "kernel-style" u32 variables in numbers.h
 #define TESTBED_ANALYZER 1
-#include "numbers.h"
+#include "../common/numbers.h"
 
 #define NSEC_PER_SEC 1000000000UL
 #define NSEC_PER_MS 1000000UL
@@ -222,7 +222,7 @@ void printStreamInfo(SrcDst sd)
     std::cout << IPtoString(sd.m_dstip) << ":" << sd.m_dstport;
 }
 
-int setup_pcap(ThreadParam *param, const char *dev, std::string &pcapfilter) 
+int setup_pcap(ThreadParam *param, const char *dev, std::string &pcapfilter)
 {
     char errbuf[PCAP_ERRBUF_SIZE];
     pcap_t *descr;

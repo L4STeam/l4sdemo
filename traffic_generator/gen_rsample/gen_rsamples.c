@@ -26,7 +26,7 @@ int sampleindex;
  {
      int i, j;
      char c;
- 
+
      for (i = 0, j = strlen(s)-1; i<j; i++, j--) {
          c = s[i];
          s[i] = s[j];
@@ -38,7 +38,7 @@ int sampleindex;
  void itoa(int n, char s[])
  {
      int i, sign;
- 
+
      if ((sign = n) < 0)  /* record sign */
          n = -n;          /* make n positive */
      i = 0;
@@ -51,34 +51,32 @@ int sampleindex;
      reverse(s);
  }
 
-/* This method reads the values of a Pareto distribution sample file 
+/* This method reads the values of a Pareto distribution sample file
    into an array
  */
 void initialize_distribution(){
   FILE* fd;
   int i = 0;
-  
-  if ((fd = fopen("samples.txt", "r")) < 0) {
+
+  if (!(fd = fopen("samples.txt", "r"))) {
     perror("open");
     exit(1);
   }
-  
+
   for(i=0; i < 100000; i++){
-    char r[30];
-    if (fscanf(fd, "%s", r) == 0) {
+    if (fscanf(fd, "%d", &samples[i]) <= 0) {
 	perror("error reading samples");
 	exit(1);
     }
-    samples[i] = atoi(r);
   }
   fclose(fd);
 }
 
-void writeRandomSample(int sampleid) 
+void writeRandomSample(int sampleid)
 {
     struct timeval randomize;
     long seed;
-    
+
     gettimeofday(&randomize, NULL);
     seed = (&randomize)->tv_usec;
     srand((int)seed);
@@ -93,7 +91,7 @@ void writeRandomSample(int sampleid)
         printf("Error opening output file!\n");
         exit(1);
     }
-    for (int i = 0; i < 100000; ++i) 
+    for (int i = 0; i < 100000; ++i)
     {
 	fprintf(f_out, "%d\n", samples[(rand() % 100000)]);
     }
@@ -102,24 +100,24 @@ void writeRandomSample(int sampleid)
 }
 
 int main(int argc, char *argv[]){
-  
-  sampleindex = 0;  
- 
+
+  sampleindex = 0;
+
   if(argc != 2){
-    fprintf(stderr, 
+    fprintf(stderr,
 	    "Usage: %s <nr of random samples>\n", argv[0]);
     exit(1);
 
-	
+
   }
   int nr_rsamples = atoi(argv[1]);
-  
-  initialize_distribution(); //read the the Pareto distribution from file	
-  
-  for (int i = 0; i < nr_rsamples; ++i) 
+
+  initialize_distribution(); //read the the Pareto distribution from file
+
+  for (int i = 0; i < nr_rsamples; ++i)
 {
 	writeRandomSample(i);
 }
 
   return 0;
-} 
+}

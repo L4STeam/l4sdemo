@@ -1,3 +1,2 @@
 #!/bin/bash
-ssh $SERVER_B "killall scp" &
-
+ssh $SERVER_B "killall scp"

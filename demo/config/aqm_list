@@ -1,43 +1,16 @@
-DualPI2 : dpi2
-DualPI2 DC : dpi2_dc
-DualPI2 DC lthresh4 : dpi2_dc_lthresh4
-DualPI2 DC lthresh6 : dpi2_dc_lthresh6
-DualPI2 DC wrr10 : dpi2_dc_wrr10
-DualPI2 DC wrr10 lthresh6 : dpi2_dc_wrr10lthresh6
-DualPI2 DC wrr10 lthresh6 ldrop25 : dpi2_dc_wrr10lthresh6ldrop25
-DualPI2 20ms k1 ect1_scal : dpi2_20_ect1
-DualPI2 40ms : dpi2_40
-DualPI2 10ms : dpi2_10
-DualPI2 15ms k1 : dpi2_15_k1
-DualPI2 15ms k2 : dpi2_15_k2
-DualPI2 5ms : dpi2_5
-DualPI2 1ms : dpi2_1
-DualPI2 ecn_thresh 2 k1 (EC) : dpi2_ecnth2_ec
-DualPI2 ecn_thresh 4 k1 (EC) : dpi2_ecnth4_ec
-DualPI2 ecn_thresh 2 k2 (DC) : dpi2_ecnth2_dc
-DualPI2 ecn_thresh 4 k2 (dC) : dpi2_ecnth4_dc
-PI2 (PI Improved with a Square) : pi2
-PI2 dualq : pi2_dualq
-PI2 40ms (PI2 with 40ms target) : pi2_40
-PI2 10ms (PI2 with 10ms target) : pi2_10
-PI2 5ms (PI2 with 5ms target) : pi2_5
-PI2 1ms (PI2 with 1ms target) : pi2_1
-Tail Drop : td
+DualPI2 Prague : dpi2
+DualPI2 DCTCP : dpi2_dc
+Taildrop 10ms : td_10
+Taildrop 20ms : td_20
+Taildrop 50ms : td_40
+Taildrop 100ms : td_100
+Taildrop 200ms : td_200
 PIE : pie
 PIE 40ms : pie_40
 PIE 10ms : pie_10
 PIE 5ms : pie_5
 PIE 1ms : pie_1
 FQ Codel : fqcodel
+FQ Codel CE 1 : fqcodel_ce1
 FQ Codel CE 2 : fqcodel_ce2
-FQ Codel CE 4 : fqcodel_ce4
-FQ Codel CE 6 : fqcodel_ce6
-FQ Codel CE 12 : fqcodel_ce12 
-RED : red_ecn
-RED without ECN : red
-DualQ Coupled AQM : dualq
-SingleQ Coupled AQM : singleq
-DualQ (fixed) : dualq_fixed
-SingleQ (fixed) : singleq_fixed
-DualQ for ECN-Cubic : dualq_eq
-
+RED : red

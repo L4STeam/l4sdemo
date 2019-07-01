@@ -99,7 +99,7 @@ void transfer_compl_data (){
     struct hostent *server;
 
     char buf;
-    char sendbuf[BUFFER_SIZE]; 
+    char sendbuf[BUFFER_SIZE];
     bzero(sendbuf, BUFFER_SIZE);
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -140,9 +140,9 @@ void transfer_compl_data (){
             tp.size_write = tmp_size;
             tp.time_write = tmp_time;
             tp.time_write_hs = tmp_time_hs;
-	
+
             pthread_mutex_unlock(&tp.data_mutex);
-	    
+
  	    int buf_index = 0;
 	    int bytes_per_chunk =  sizeof(double)*nr_samples;
 	    memcpy(&sendbuf[buf_index],tp.size_send, bytes_per_chunk);
@@ -162,12 +162,12 @@ void transfer_compl_data (){
 		   }
 
 		  bytes_sent += n;
-		  n = 0;	
+		  n = 0;
             }
 	    bzero(tp.size_send, sizeof(double)*maxtpsend);
             bzero(tp.time_send, sizeof(double)*maxtpsend);
             bzero(tp.time_send_hs, sizeof(double)*maxtpsend);
-        } else 
+        } else
 		pthread_mutex_unlock(&tp.data_mutex);
 
         gettimeofday(&end_time, NULL);
@@ -184,20 +184,20 @@ void transfer_compl_data (){
  */
 void initialize_distribution(char *filename){
   FILE* fd;
-  int i = 0;
+  int i = 0, r;
 
-  if ((fd = fopen(filename, "r")) < 0) {
-    perror("open");
+  if (!(fd = fopen(filename, "r"))) {
+    perror("Cannot open the distribution file!");
     exit(1);
   }
 
   for(i=0; i < 100000; i++){
-    char r[30];
-    if (fscanf(fd, "%s", r) == 0) {
+    if (fscanf(fd, "%d", &r) <= 0) {
         perror("error reading samples");
         exit(1);
     }
-    samples[i] = atoi(r)*40/iat_rate; // scale to the correct link capacity (reference rate is 40Mbps)
+    // scale to the correct link capacity (reference rate is 40Mbps)
+    samples[i] = r * 40 / iat_rate;
   }
   fclose(fd);
 }
@@ -263,7 +263,7 @@ void run_client(){
 
     pthread_detach(pthread_self());
     pthread_exit(0);
-  
+
 }
 
   /* Read data from socket until there is no more to read */
@@ -417,15 +417,13 @@ int main(int argc, char *argv[]){
   pthread_mutex_init(&mutex, NULL);
   char filename[50] = "completion_time_port";
   strcat(filename, argv[2]);
-  f_wo_hs = fopen(filename, "w");
-  if (f_wo_hs == NULL) {
+  if (!(f_wo_hs = fopen(filename, "w"))) {
     printf("Error opening output file!\n");
     exit(1);
   }
 
   strcat(filename, "_w_hs");
-  f_w_hs = fopen(filename, "w");
-  if (f_w_hs == NULL) {
+  if (!(f_w_hs = fopen(filename, "w"))) {
     printf("Error opening output file!\n");
     exit(1);
   }

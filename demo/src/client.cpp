@@ -314,9 +314,8 @@ void Client::updateNumDownloads(int num)
 void Client::startDownloads()
 {
     std::stringstream command;
-    command << ssh_download << " "<<  nrFlows;
+    command << ssh_download << " "<<  nrFlows << " &";
     system(ssh_killdownload.c_str());
-    sleep(1);
     system(command.str().c_str());
 }
 

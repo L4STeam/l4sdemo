@@ -1,8 +1,0 @@
-.sch_fq_codel.ko.cmd
-.sch_fq_codel.mod.o.cmd
-.sch_fq_codel.o.cmd
-.tmp_versions/
-Module.symvers
-modules.order
-sch_fq_codel.ko
-sch_fq_codel.mod.c

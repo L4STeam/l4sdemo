@@ -2,30 +2,50 @@
 
 source $(dirname $0)/environment.sh
 
+# set up ssh keys
+echo "Setting up servers and clients"
+mkdir -p $HOME/.ssh
+chmod 0700 $HOME/.ssh
+
 SSH_KEY=~/.ssh/l4s-testbed
 if [ ! -f $SSH_KEY ]; then
 	yes '' | ssh-keygen -t rsa -f $SSH_KEY
+    eval $(ssh-agent)
+    ssh-add $SSH_KEY
 fi
 
-## First create .ssh directory on each machine ##
 for machine in "$CLIENT_A" "$CLIENT_B" "$SERVER_A" "$SERVER_B"; do
-	ssh $machine "umask 077; test -d .ssh || mkdir .ssh"
-	## cat local id.rsa.pub file and pipe over ssh to append the public key in remote machine ##
-	cat ${SSH_KEY}.pub | ssh $machine "cat >> .ssh/authorized_keys"
-	## copy traffic generator data
+	ssh -t $machine bash -xc "$(cat << EOF
+whoami
+mkdir -p .ssh
+chmod 700 .ssh
+echo "$(cat ${SSH_KEY})" >> .ssh/authorized_keys
+EOF
+)"
 	scp -r traffic_generator $machine:.
+	scp -r kernel_modules $machine:.
+	scp -r common $machine:.
+	scp qdisc_modules_init.sh $machine:.
 done
 
-## This might not be necessary
-eval $(ssh-agent)
-ssh-add
-
-# compile client traffic generator
 for client in "$CLIENT_A" "$CLIENT_B"; do
-	ssh $client "cd traffic_generator/http_client; make; cd ../dl_client; make; cp ../gen_rsample/rit*.txt ~/."
+	ssh -t $client bash -xc "$(cat << EOF
+whoami
+make -C traffic_generator/http_client
+make -C traffic_generator/dl_client
+chmod +x qdisc_modules_init.sh
+./qdisc_modules_init.sh
+EOF
+)"
 done
 
-# compile server traffic generator
 for server in "$SERVER_A" "$SERVER_B"; do
-	ssh $serve "cd traffic_generator/http_server; make; cd ../dl_server; make; cp ../gen_rsample/rs*.txt ~/."
+    ssh -t $server bash -xc "$(cat << EOF
+whoami
+make -C traffic_generator/http_server
+make -C traffic_generator/dl_server
+chmod +x qdisc_modules_init.sh
+./qdisc_modules_init.sh
+EOF
+)"
 done

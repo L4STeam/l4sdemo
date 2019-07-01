@@ -8,3 +8,5 @@ L4SDemo
 demo/Makefile
 dl_client
 dl_server
+tags
+.ccls

@@ -12,7 +12,6 @@ on=$1
 
 ssh ${CLIENT}  'sudo killall client.x86-64.pthread' 
 ssh ${SERVER}  'sudo killall ballserver.x86-64.pthread'
-#sleep 1
 
 if [ "$on" == "1" ]; then
 	ssh ${CLIENT}  "export DISPLAY=\":0\";cd Downloads/ballserver;v6/client.x86-64.pthread $SERVER > /dev/null" &

@@ -1,2 +1,4 @@
 #!/bin/bash
-sudo setcap cap_net_raw,cap_net_admin=eip L4SDemo
+HERE=$(realpath $(dirname $0))
+
+sudo setcap cap_net_raw,cap_net_admin=eip "${HERE}/../L4SDemo"

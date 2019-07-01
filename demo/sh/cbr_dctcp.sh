@@ -9,9 +9,8 @@ DCTCPSERVER=$SERVER_A
 DCTCPCLIENT=$CLIENT_A
 
 rate=$1
-ssh inton@${DCTCPSERVER}  'killall iperf' &
+ssh ${DCTCPSERVER}  'killall iperf'
 if [ "$rate" != "0" ]; then
-	sleep 1
 	ssh ${DCTCPSERVER} "sudo iptables -t mangle -F"
 	ssh ${DCTCPSERVER} "sudo iptables -t mangle -A OUTPUT -p udp -j TOS --or-tos 10"
 	ssh ${DCTCPSERVER} "iperf -c ${DCTCPCLIENT}  -u -t 500 -b ${rate}m" &

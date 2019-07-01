@@ -1,9 +1,3 @@
-/*
- * Compile with -D SKIP_ENCODING to use only integer reporting
- *
- * Make sure all files importing this is compiled with the same flag
- */
-
 /* we store drops in 5 bits */
 #define DROPS_M 2
 #define DROPS_E 3
@@ -18,12 +12,9 @@
  * m_b: Number of mantissa bits
  * e_b: Number of exponent bits
  */
-u32 fl2int(u32 fl, u32 m_b, u32 e_b)
+static inline u32 fl2int(u32 fl, u32 m_b, u32 e_b)
 {
 	const u32 m_max = 1 << m_b;
-#ifdef SKIP_ENCODING /* old behaviour - no encoding */
-	return fl;
-#endif
 
 	fl &= ((m_max << e_b) - 1);
 
@@ -42,7 +33,7 @@ u32 fl2int(u32 fl, u32 m_b, u32 e_b)
  * e_b: Number of exponent bits
  * r: Variable where the remainder will be stored
  */
-u32 int2fl(u32 val, u32 m_b, u32 e_b, u32 *r)
+static inline u32 int2fl(u32 val, u32 m_b, u32 e_b, u32 *r)
 {
 	u32 len, exponent, mantissa;
 	const u32 max_e = (1 << e_b) - 1;
@@ -50,15 +41,6 @@ u32 int2fl(u32 val, u32 m_b, u32 e_b, u32 *r)
 	const u32 max_fl = ((max_m << 1) + 1) << (max_e - 1);
 	*r = 0;
 
-#ifdef SKIP_ENCODING /* old behaviour - no encoding */
-	/* handle overflow */
-	len = (1 << (m_b + e_b)) - 1; /* misuse of len variable, should be max_val */
-	if (val > len) {
-	*r = val - len;
-		return len;
-	}
-	return val;
-#endif
 	if (val < (1 << (m_b + 1))) {
 		/* possibly only first exponent included, no encoding needed */
 		return val;
@@ -83,26 +65,19 @@ u32 int2fl(u32 val, u32 m_b, u32 e_b, u32 *r)
 #ifdef TESTBED_ANALYZER /* don't include in kernel compilation due to SSE */
 /* Decode queueing delay
  *
- * The code is left here so that this file is used as an API for
+ * The code is left here so that this file is used as an API for the
  * analyzer and can be swapped with other implementation during
  * compilation.
  *
  * Return value is in us
  */
-u32 qdelay_decode(u32 value)
+static inline u32 qdelay_decode(u32 value)
 {
-#ifdef SKIP_ENCODING /* compile with -DSKIP_ENCODING */
-	/* Old behaviour without encoding and using number of ms
-	 * Kept for compatibility with old code
-	 */
-	return value * 1000;
-#else
 	/* Input value is originally time in ns right shifted 15 times
 	 * to get division by 1000 and units of 32 us. The right shifting
 	 * by 10 to do division by 1000 actually causes a rounding
 	 * we correct by doing (x * (1024/1000)) here.
 	 */
 	return fl2int(value, QDELAY_M, QDELAY_E) * 32 * 1.024;
-#endif
 }
 #endif

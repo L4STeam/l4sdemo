@@ -3,4 +3,4 @@ Cubic : cubic
 Cubic ECN : cubic_ecn
 Reno : reno
 BBR : bbr
-BBR ECN : bbr_ecn
+Prague : prague

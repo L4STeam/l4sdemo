@@ -5,6 +5,9 @@
  * It is only used for our testbed, and for a final implementation it
  * should not be included.
  */
+#ifndef IS_TESTBED
+#define IS_TESTBED 1
+#endif
 
 #include <net/inet_ecn.h>
 #include "numbers.h"
@@ -24,98 +27,126 @@ struct testbed_metrics {
 	u16     drops_nonecn;
 };
 
-void testbed_metrics_init(struct testbed_metrics *testbed)
+static inline void testbed_metrics_init(struct testbed_metrics *testbed)
 {
 	testbed->drops_ecn = 0;
 	testbed->drops_nonecn = 0;
 }
 
-void testbed_inc_drop_count(struct sk_buff *skb, struct testbed_metrics *testbed)
+static inline void __testbed_inc_drop_count(struct testbed_metrics *testbed,
+					    u8 tos)
 {
-	struct iphdr* iph;
-	struct ethhdr* ethh;
+	if (tos & INET_ECN_MASK)
+		testbed->drops_ecn++;
+	else
+		testbed->drops_nonecn++;
+}
 
-	ethh = eth_hdr(skb);
+static inline void testbed_inc_drop_count(struct testbed_metrics *testbed,
+					  struct sk_buff *skb)
+{
 
-	/* TODO: make IPv6 compatible (but we probably won't going to use it in our testbed?) */
-	if (ntohs(ethh->h_proto) == ETH_P_IP) {
-		iph = ip_hdr(skb);
+	u32 wlen = skb_network_offset(skb);
 
-		if ((iph->tos & 3))
-			testbed->drops_ecn++;
-		else
-			testbed->drops_nonecn++;
+	switch (tc_skb_protocol(skb)) {
+	case htons(ETH_P_IP):
+		wlen += sizeof(struct iphdr);
+		if (!pskb_may_pull(skb, wlen))
+			break;
+
+		__testbed_inc_drop_count(testbed,
+					 ipv4_get_dsfield(ip_hdr(skb)));
+		break;
+	case htons(ETH_P_IPV6):
+		wlen += sizeof(struct iphdr);
+		if (!pskb_may_pull(skb, wlen))
+			break;
+
+		__testbed_inc_drop_count(testbed,
+					 ipv6_get_dsfield(ipv6_hdr(skb)));
+		break;
 	}
 }
 
-u32 testbed_get_drops(struct iphdr *iph, struct testbed_metrics *testbed)
+static inline u32 testbed_write_drops(struct testbed_metrics *testbed, u8 tos)
 {
-	u32 drops;
-	u32 drops_remainder;
+	u32 drops, remainder;
 
-	if ((iph->tos & 3)) {
-		drops = int2fl(testbed->drops_ecn, DROPS_M, DROPS_E, &drops_remainder);
-		if (drops_remainder > 10) {
-			pr_info("High (>10) drops ecn remainder:  %u\n", drops_remainder);
+	if (tos & INET_ECN_MASK) {
+		drops = int2fl(testbed->drops_ecn, DROPS_M, DROPS_E,
+			       &remainder);
+		if (remainder > 10) {
+			pr_info("High (>10) drops ecn remainder:  %u\n",
+				remainder);
 		}
-		testbed->drops_ecn = (__force __u16) drops_remainder;
+		testbed->drops_ecn = (__force __u16)remainder;
 	} else {
-		drops = int2fl(testbed->drops_nonecn, DROPS_M, DROPS_E, &drops_remainder);
-		if (drops_remainder > 10) {
-			pr_info("High (>10) drops nonecn remainder:  %u\n", drops_remainder);
+		drops = int2fl(testbed->drops_nonecn, DROPS_M, DROPS_E,
+			       &remainder);
+		if (remainder > 10) {
+			pr_info("High (>10) drops nonecn remainder:  %u\n",
+				remainder);
 		}
-		testbed->drops_nonecn = (__force __u16) drops_remainder;
+		testbed->drops_nonecn = (__force __u16)remainder;
 	}
 	return drops;
 }
 
-/* add metrics used by traffic analyzer to packet before dispatching */
-void testbed_add_metrics(struct sk_buff *skb, struct testbed_metrics *testbed)
+static inline void testbed_add_metrics_ipv4(struct sk_buff *skb,
+					    struct testbed_metrics *testbed,
+					    u16 qdelay)
 {
-	struct iphdr *iph;
-	struct ethhdr *ethh;
+	struct iphdr *iph = ip_hdr(skb);
+	u16 drops, id;
 	u32 check;
-	u16 drops;
-	u16 id;
-	u32 qdelay;
+
+	check = ntohs((__force __be16)iph->check) + ntohs(iph->id);
+	if ((check + 1) >> 16)
+		check = (check + 1) & 0xffff;
+	drops = (__force __u16)testbed_write_drops(testbed, iph->tos);
+	/* use upper 5 bits in id field to store number of drops before
+	 * the current packet
+	 */
+	id = qdelay | (drops << 11);
+
+	check -= id;
+	check += check >> 16; /* adjust carry */
+
+	iph->id = htons(id);
+	iph->check = (__force __sum16)htons(check);
+}
+
+/* Add metrics used by traffic analyzer to packet before dispatching.
+ * qdelay is the time in units of 1024 us that the packet spent in the queue.*/
+static inline void testbed_add_metrics(struct sk_buff *skb,
+				       struct testbed_metrics *testbed,
+				       u32 qdelay_us)
+{
+	int wlen = skb_network_offset(skb);
 	u32 qdelay_remainder;
-	u64 skb_ts;
+	u16 qdelay;
 
-	ethh = eth_hdr(skb);
-	if (ntohs(ethh->h_proto) == ETH_P_IP) {
-		iph = ip_hdr(skb);
-		id = ntohs(iph->id);
-		check = ntohs((__force __be16)iph->check);
-		check += id;
-		if ((check+1) >> 16) check = (check+1) & 0xffff;
+	/* queue delay is converted from us (1024 ns; >> 10) to units
+	 * of 32 us and encoded as float
+	 */
+	qdelay = (__force __u16)int2fl(qdelay_us >> 5, QDELAY_M, QDELAY_E,
+				       &qdelay_remainder);
+	if (qdelay_remainder > 20) {
+		pr_info("High (>20) queue delay remainder:  %u\n",
+			qdelay_remainder);
+	}
 
-#ifndef SKIP_ENCODING
-		/* queue delay is converted from ns to units of 32 us and encoded as float */
-		memcpy(&skb_ts, qdisc_skb_cb(skb)->data, sizeof(u64));
-		qdelay = ((__force __u64)(ktime_get_ns() - skb_ts)) >> 15;
-		qdelay = int2fl(qdelay, QDELAY_M, QDELAY_E, &qdelay_remainder);
-		if (qdelay_remainder > 20) {
-			pr_info("High (>20) queue delay remainder:  %u\n", qdelay_remainder);
-		}
-#else /* old behaviour - no encoding */
-		/* convert to ms */
-		u64 ts = 0;
-        	memcpy(&ts, qdisc_skb_cb(skb)->data, sizeof(u64));
+	/* TODO: IPv6 support using flow label (and increase resolution?) */
+	switch (tc_skb_protocol(skb)) {
+	case htons(ETH_P_IP):
+		wlen += sizeof(struct iphdr);
+		if (!pskb_may_pull(skb, wlen) ||
+		    skb_try_make_writable(skb, wlen))
+			break;
 
-		qdelay = ((__force __u64)(ktime_get_ns() - ts)) >> 20;
-		if (qdelay > 2047) {
-			pr_info("Large queue delay:  %u\n", qdelay);
-			qdelay = 2047;
-		}
-#endif
-
-		id = (__force __u16) qdelay;
-		drops = (__force __u16) testbed_get_drops(iph, testbed);
-		id = id | (drops << 11); /* use upper 5 bits in id field to store number of drops before the current packet */
-
-		check -= id;
-		check += check >> 16; /* adjust carry */
-		iph->id = htons(id);
-		iph->check = (__force __sum16)htons(check);
+		testbed_add_metrics_ipv4(skb, testbed, qdelay);
+		break;
+	default:
+		break;
 	}
 }

@@ -8,7 +8,7 @@ QT       += core gui widgets
 
 TARGET = L4SDemo
 CONFIG   -= app_bundle
-CONFIG += c++11 debug
+CONFIG += c++11 release
 TEMPLATE = app
 
 
