@@ -2,7 +2,7 @@
 
 HERE=$(realpath $(dirname $0))
 DEST="${HERE}/../iproute2-l4s"
-TCDIR="${HERE}/tc"
+TCDIR="${DEST}/tc"
 
 echo "Building iproute2"
 

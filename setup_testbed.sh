@@ -22,7 +22,7 @@ sudo env DEBIAN_FRONTEND=noninteractive \
 		libpcap-dev libelf-dev gcc build-essential flex \
 		bison automake autotools-dev autoconf libsm-dev \
 		linux-headers-generic pkg-config libmnl-dev \
-		libxrender1 libfontconfig1 libxi6
+		libxrender1 libfontconfig1 libxi6 vnc4server
 
 echo "Building and loading qdisc modules"
 ./qdisc_modules_init.sh
