@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+#set -e
 
 HERE=$(realpath $(dirname $0))
 REV=$(uname -r | awk -F '.' '{ printf "%d.%d", $1, $2 }')
