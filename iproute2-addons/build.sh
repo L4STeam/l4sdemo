@@ -9,7 +9,7 @@ echo "Building iproute2"
 rm -rf "$DEST"
 git clone \
     --depth 1 --single-branch \
-    -b $(uname -r | awk -F '.' '{ printf "v%d.%d.0", $1, $2 }')
+    -b $(uname -r | awk -F '.' '{ printf "v%d.%d.0", $1, $2 }') \
     git://git.kernel.org/pub/scm/network/iproute2/iproute2.git "$DEST"
 
 for qdisc in *.c; do
