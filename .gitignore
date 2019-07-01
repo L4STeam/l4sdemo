@@ -22,3 +22,5 @@ Modules.symvers
 Module.symvers
 *.ur-safe
 environment.local
+.qmake.stash
+iproute2-l4s
