@@ -6,7 +6,6 @@ fi
 
 set -e
 
-
 LAB_PREFIX=${LAB_PREFIX:-l4s}
 LAB_ID=${LAB_ID:-171}  # ab
 SSH_KEY=${SSH_KEY:-id_rsa.pub}
@@ -20,29 +19,43 @@ declare -A PREFIXES
 PREFIXES[$SERVER_BRIDGE]=192.168.$((100+LAB_ID))
 PREFIXES[$CLIENT_BRIDGE]=192.168.$((200+LAB_ID))
 
-declare -A ADDR_POOL
-ADDR_POOL[$SERVER_BRIDGE]=1
-ADDR_POOL[$CLIENT_BRIDGE]=1
-
 declare -A MACTOH
+declare -A IPADDR
+declare -A HTOIP
+declare -A MACTOIP
 MAC_CNT=0
 function gen_mac()
 {
+    local name=$1
+    local ip=$2
 	__mac=$(printf "52:54:00:%02x:cd:%02x" ${LAB_ID} ${MAC_CNT})
-	MACTOH[$__mac]=$1
+	MACTOH[$__mac]=$name
+    IPADDR[$ip]=$name
+    HTOIP[$name]=$ip
+    MACTOIP[$__mac]=$ip
 	((MAC_CNT++)) || true
 }
-gen_mac ${LAB_PREFIX}-client-a
+
+function gen_client_address()
+{
+    gen_mac $1 ${PREFIXES[$CLIENT_BRIDGE]}.$2
+}
+
+function gen_server_address()
+{
+    gen_mac $1 ${PREFIXES[$SERVER_BRIDGE]}.$2
+}
+gen_client_address ${LAB_PREFIX}-client-a 217
 MAC_CLIENT_A=$__mac
-gen_mac ${LAB_PREFIX}-client-b
+gen_client_address ${LAB_PREFIX}-client-b 216
 MAC_CLIENT_B=$__mac
-gen_mac ${LAB_PREFIX}-server-a
+gen_server_address ${LAB_PREFIX}-server-a 115
 MAC_SERVER_A=$__mac
-gen_mac ${LAB_PREFIX}-server-b
+gen_server_address ${LAB_PREFIX}-server-b 114
 MAC_SERVER_B=$__mac
-gen_mac ${LAB_PREFIX}-aqm
+gen_client_address ${LAB_PREFIX}-aqm 1
 MAC_AQM_CLIENT=$__mac
-gen_mac ${LAB_PREFIX}-aqm
+gen_server_address ${LAB_PREFIX}-aqm 1
 MAC_AQM_SERVER=$__mac
 
 declare -A MACS
@@ -52,9 +65,6 @@ MACS[$MAC_AQM_CLIENT]=$CLIENT_BRIDGE
 MACS[$MAC_SERVER_A]=$SERVER_BRIDGE
 MACS[$MAC_SERVER_B]=$SERVER_BRIDGE
 MACS[$MAC_AQM_SERVER]=$SERVER_BRIDGE
-
-declare -A IPADDR
-declare -A HTOIP
 
 
 DISTRIB_HDD=/data/cloudimg/bionic-server-cloudimg-amd64.qcow2
@@ -136,16 +146,13 @@ EOF
 			continue
 		fi
 		local bridge=${MACS[$mac]}
-		local ipaddr=${PREFIXES[$bridge]}.${ADDR_POOL[$bridge]}
-		((ADDR_POOL[$bridge]++)) || true
+		local ipaddr=${MACTOIP[$mac]}
 		cat >> network-config << EOF
   if-$cnt:
     match:
       macaddress: $mac
     addresses: [${ipaddr}/24]
 EOF
-		IPADDR[$ipaddr]=$name
-		HTOIP[$name]=$ipaddr
 
 		if [ "$ipaddr" != ${PREFIXES[$bridge]}.1 ]; then
 				cat >> network-config << EOF
