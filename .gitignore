@@ -21,3 +21,4 @@ Modules.symvers
 
 Module.symvers
 *.ur-safe
+environment.local
