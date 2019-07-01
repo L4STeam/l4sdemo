@@ -15,11 +15,12 @@ export CLIENT_B="b.client.l4s"
 export CLIENT_A_IFACE="eth0"
 export CLIENT_B_IFACE="eth0"
 
-# The following variables should be good as-is
-export PCAPFILTER="ip and src net $SRC_NET"
-export AQMNODE=$(ip -4 address show dev $IFACE | awk -F '[ /]' '/inet/ { print $6; exit 0 }')
-
 # Attempt to load local settings that would override some of the above
 if [ -x "environment.local" ]; then
     source environment.local
 fi
+
+# The following variables should be good as-is
+export PCAPFILTER="ip and src net $SRC_NET"
+export AQMNODE=$(ip -4 address show dev $IFACE | awk -F '[ /]' '/inet/ { print $6; exit 0 }')
+
