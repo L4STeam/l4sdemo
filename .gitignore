@@ -10,3 +10,12 @@ dl_client
 dl_server
 tags
 .ccls
+
+*.ko
+*.o
+*.cmd
+.tmp_versions
+modules.order
+Modules.symvers
+*.mod.c
+
