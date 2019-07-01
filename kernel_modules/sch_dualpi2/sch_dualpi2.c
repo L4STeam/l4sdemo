@@ -127,9 +127,7 @@ struct dualpi2_sched_data {
 	struct dualpi2_vars vars;
 	struct dualpi2_stats stats;
 	struct timer_list adapt_timer;
-#ifdef IS_TESTBED
 	struct testbed_metrics testbed;
-#endif
 };
 
 static inline void set_ts_cb(struct sk_buff *skb)
@@ -275,9 +273,7 @@ static int dualpi2_qdisc_enqueue(struct sk_buff *skb, struct Qdisc *sch,
 
 drop:
 	q->stats.dropped++;
-#ifdef IS_TESTBED
-	testbed_inc_drop_count(skb, &q->testbed);
-#endif
+	testbed_inc_drop_count(&q->testbed, skb);
 	q->vars.deferred_drop_count += 1;
         q->vars.deferred_drop_len += qdisc_pkt_len(skb);
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
@@ -528,9 +524,7 @@ static int dualpi2_init(struct Qdisc *sch, struct nlattr *opt,
 	dualpi2_calculate_alpha_beta(q);
 	sch->limit = q->params.limit;
 	q->l_queue = &noop_qdisc;
-#ifdef IS_TESTBED
 	testbed_metrics_init(&q->testbed);
-#endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0)
 	setup_timer(&q->adapt_timer, dualpi2_timer, (unsigned long)sch);
@@ -685,9 +679,7 @@ pick_packet:
 	/* drop on dequeue */
 	if (!q->params.drop_early &&
 	    should_drop(sch, q, get_ecn_field(skb), skb)) {
-#ifdef IS_TESTBED
-		testbed_inc_drop_count(skb, &q->testbed);
-#endif
+		testbed_inc_drop_count(&q->testbed, skb);
 		q->vars.deferred_drop_count += 1;
 		q->vars.deferred_drop_len += qdisc_pkt_len(skb);
 		consume_skb(skb);
@@ -722,14 +714,11 @@ drop:
 		q->vars.deferred_drop_len = 0;
 	}
 	if (skb)
-#ifdef IS_TESTBED
 	{
-		testbed_add_metrics(skb, &q->testbed);
-#endif
+		testbed_add_metrics(skb, &q->testbed,
+				    (ktime_get_ns() - get_ts_cb(skb)) >> 10);
 		qdisc_bstats_update(sch, skb);
-#ifdef IS_TESTBED
 	}
-#endif
 
 	return skb;
 }
