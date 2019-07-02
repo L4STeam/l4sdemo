@@ -30,7 +30,7 @@ __set_aqm() {
 	do_tc "qdisc del dev $iface root"
 	do_tc "qdisc add dev $iface root handle 1: htb default 5"
 	do_tc "class add dev $iface parent 1: classid 1:5 htb rate 400Mbit"
-	do_tc "class add dev $iface parent 1: classid 1:10 htb rate ${rate}Mbit ceil ${rate}Mbit burst 1516"
+	do_tc "class add dev $iface parent 1: classid 1:10 htb rate ${rate}Mbit ceil ${rate}Mbit burst 128k"
 	do_tc "filter add dev $iface protocol ip parent 1:0 prio 1 u32 match ip src ${DCTCPSERVER}/24 flowid 1:10"
 
 	#set extra rtt
