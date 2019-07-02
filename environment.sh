@@ -14,11 +14,16 @@ export CLIENT_B="b.client.l4s"
 # The interface on both clients connected to the aqm/router (to apply mixed rtt)
 export CLIENT_A_IFACE="eth0"
 export CLIENT_B_IFACE="eth0"
+# SSH Key to use in the lab
+export SSH_KEY=~/.ssh/l4s-testbed
 
 # Attempt to load local settings that would override some of the above
 if [ -x "environment.local" ]; then
     source environment.local
 fi
+
+eval $(ssh-agent -s)
+ssh-add "${SSH_KEY}"
 
 # The following variables should be good as-is
 export PCAPFILTER="ip and src net $SRC_NET"

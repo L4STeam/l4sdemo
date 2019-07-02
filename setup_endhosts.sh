@@ -7,7 +7,6 @@ echo "Setting up servers and clients"
 mkdir -p $HOME/.ssh
 chmod 0700 $HOME/.ssh
 
-SSH_KEY=~/.ssh/l4s-testbed
 if [ ! -f $SSH_KEY ]; then
 	yes '' | ssh-keygen -t rsa -f $SSH_KEY
     eval $(ssh-agent -s)
