@@ -10,7 +10,7 @@ chmod 0700 $HOME/.ssh
 SSH_KEY=~/.ssh/l4s-testbed
 if [ ! -f $SSH_KEY ]; then
 	yes '' | ssh-keygen -t rsa -f $SSH_KEY
-    eval $(ssh-agent)
+    eval $(ssh-agent -s)
     ssh-add $SSH_KEY
 fi
 
@@ -19,7 +19,7 @@ for machine in "$CLIENT_A" "$CLIENT_B" "$SERVER_A" "$SERVER_B"; do
 whoami
 mkdir -p .ssh
 chmod 700 .ssh
-echo "$(cat ${SSH_KEY})" >> .ssh/authorized_keys
+echo "$(cat ${SSH_KEY}.pub)" >> .ssh/authorized_keys
 EOF
 )"
 	scp -r traffic_generator $machine:.
