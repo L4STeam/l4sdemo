@@ -43,7 +43,7 @@ void DataGenerator::startTA(bool ipc)
     std::string dev = safe_getenv("IFACE");
     std::cout << "INTERFACE: " << dev << std::endl;
 
-    tp = new ThreadParam(sinterval, folder, true, nrs);
+    tp = new ThreadParam(sinterval, folder, false, nrs);
     setThreadParam(tp);
     demo_data = new DemoData();
     demo_data->ipclass = ipc;

@@ -263,7 +263,8 @@ static int dualpi2_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 	if (drop_early != -1)
 		addattr_l(n, 1024, TCA_DUALPI2_DROP_EARLY, &drop_early,
 			  sizeof(drop_early));
-        addattr_l(n, 1024, TCA_DUALPI2_WRR_RATIO, &wrr_ratio, sizeof(wrr_ratio));
+	if (wrr_ratio)
+		addattr_l(n, 1024, TCA_DUALPI2_WRR_RATIO, &wrr_ratio, sizeof(wrr_ratio));
 
 	tail->rta_len = (void *)NLMSG_TAIL(n) - (void *)tail;
 	return 0;

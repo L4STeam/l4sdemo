@@ -329,8 +329,8 @@ void addFlow(std::map<SrcDst,std::vector<FlowData>> *fd_pf, SrcDst srcdst, FlowD
 
 void processFD()
 {
-    printf("Throughput per stream (ECN queue):\n");
-
+    if (tp->db2->fm.ecn_rate.size())
+	printf("Throughput per stream (ECN queue):\n");
     for (auto& kv: tp->db2->fm.ecn_rate) {
         const SrcDst& srcdst = kv.first;
         FlowData& fd = kv.second;
@@ -338,8 +338,8 @@ void processFD()
         addFlow(&tp->fd_pf_ecn, srcdst, fd);
     }
 
-    printf("Throughput per stream (non-ECN queue):\n");
-
+    if (tp->db2->fm.nonecn_rate.size())
+	printf("Throughput per stream (non-ECN queue):\n");
     for (auto& kv: tp->db2->fm.nonecn_rate) {
         const SrcDst& srcdst = kv.first;
         FlowData& fd = kv.second;

@@ -49,7 +49,7 @@ set_taildrop() {
 }
 
 set_aqm() {
-    set_aqm "$1" "$2 limit 40000"
+    __set_aqm "$1" "$2 limit 40000"
 }
 
 if [[ $aqm == "dpi2" ]]; then
