@@ -2,6 +2,9 @@
 #set -e
 
 HERE=$(realpath $(dirname $0))
+
+source "$HERE/environment.sh"
+
 REV=$(uname -r | awk -F '.' '{ printf "%d.%d", $1, $2 }')
 
 export EXTRA_CFLAGS+="-I. -I ${HERE}/common -DIS_TESTBED=1"
