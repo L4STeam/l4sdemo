@@ -52,7 +52,7 @@ static void explain(void)
 	fprintf(stderr, "               [alpha ALPHA] [beta BETA]\n");
 	fprintf(stderr, "               [no_dualq|l4s_dualq|dc_dualq] [k KFACTOR]\n");
 	fprintf(stderr, "               [no_ecn|classic_ecn|l4s_ecn|dc_ecn]\n");
-	fprintf(stderr, "               [et_packets|et_time] [l_thresh TIME | PACKETS] [t_shift TIME]\n");
+	fprintf(stderr, "               [et_packets|et_time] [l_thresh TIME | PACKETS]\n");
 	fprintf(stderr, "		[c_limit | l_drop PROBABILITY %%]\n");
 	fprintf(stderr, "               [drop_enqueue|drop_dequeue]\n");
 	fprintf(stderr, "               [wrr_ratio PACKETS]\n");
@@ -106,8 +106,6 @@ static int dualpi2_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 	unsigned int et_packets = 0;
 	unsigned int et_time = 0;
 	unsigned int l_thresh = 0;
-        __u16 t_speed = 0;
-	unsigned int t_shift = 0;
 	unsigned int c_limit = 0;
 	unsigned int l_drop = 0;
 	unsigned int wrr_ratio = 0;
@@ -194,19 +192,6 @@ static int dualpi2_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 				fprintf(stderr, "Illegal \"l_thresh\"\n");
 				return -1;
 			}
-		} else if (strcmp(*argv, "t_shift") == 0) {
-			NEXT_ARG();
-			if (get_time(&t_shift, *argv)) {
-				fprintf(stderr, "Illegal \"t_shift\"\n");
-				return -1;
-			}
-		} else if (strcmp(*argv, "t_speed") == 0) {
-                        NEXT_ARG();
-                        if (get_u16(&t_speed, *argv, 0) ||
-                            t_speed > T_SPEED_MAX) {
-                                fprintf(stderr, "Illegal \"t_speed\"\n");
-                                return -1;
-                        }
 		} else if (strcmp(*argv, "l_drop") == 0) {
 			NEXT_ARG();
 			if (get_unsigned(&l_drop, *argv, 0) ||
@@ -275,10 +260,6 @@ static int dualpi2_parse_opt(struct qdisc_util *qu, int argc, char **argv,
                 addattr_l(n, 1024, TCA_DUALPI2_ET_PACKETS, &et_packets, sizeof(et_packets));
 	if (l_thresh)
 		addattr_l(n, 1024, TCA_DUALPI2_L_THRESH, &l_thresh, sizeof(l_thresh));
-	if (t_shift)
-		addattr_l(n, 1024, TCA_DUALPI2_T_SHIFT, &t_shift, sizeof(t_shift));
-	if (t_speed)
-                addattr_l(n, 1024, TCA_DUALPI2_T_SPEED, &t_speed, sizeof(t_speed));
 	if (drop_early != -1)
 		addattr_l(n, 1024, TCA_DUALPI2_DROP_EARLY, &drop_early,
 			  sizeof(drop_early));
@@ -302,8 +283,6 @@ static int dualpi2_print_opt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 	unsigned int ecn;
 	unsigned int et_packets;
 	unsigned int l_thresh;
-	unsigned int t_shift;
-	unsigned int t_speed;
 	unsigned int kfactor;
 	unsigned int l_drop;
 	unsigned int drop_early;
@@ -390,16 +369,6 @@ static int dualpi2_print_opt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 		l_thresh = rta_getattr_u32(tb[TCA_DUALPI2_L_THRESH]);
 		fprintf(f, "l_thresh %s ", sprint_time(l_thresh, b1));
 	}
-	if (tb[TCA_DUALPI2_T_SHIFT] &&
-	    RTA_PAYLOAD(tb[TCA_DUALPI2_T_SHIFT]) >= sizeof(__u32)) {
-		t_shift = rta_getattr_u32(tb[TCA_DUALPI2_T_SHIFT]);
-		fprintf(f, "t_shift %s ", sprint_time(t_shift, b1));
-	}
-	if (tb[TCA_DUALPI2_T_SPEED] &&
-            RTA_PAYLOAD(tb[TCA_DUALPI2_T_SPEED]) >= sizeof(__u16)) {
-                t_speed = rta_getattr_u16(tb[TCA_DUALPI2_T_SPEED]);
-                fprintf(f, "t_speed %u ", t_speed);
-        }
 	if (tb[TCA_DUALPI2_DROP_EARLY] &&
 	    RTA_PAYLOAD(tb[TCA_DUALPI2_DROP_EARLY]) >= sizeof(__u32)) {
 		drop_early = rta_getattr_u32(tb[TCA_DUALPI2_DROP_EARLY]);

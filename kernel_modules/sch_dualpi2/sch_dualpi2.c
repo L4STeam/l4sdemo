@@ -58,7 +58,6 @@
 /* parameters used */
 struct dualpi2_params {
 	u64	target;		/* user specified target delay in nanoseconds */
-	u64	tshift;		/* L4S FIFO time shift (in ns) */
 	u32	tupdate;	/* timer frequency (in jiffies) */
 	u32	limit;		/* number of packets that can be enqueued */
 	u32	alpha;		/* alpha and beta are user specified values
@@ -85,8 +84,7 @@ struct dualpi2_params {
 				 *	  ECT(1) (DCTCP compatibility)
 				 */
 		et_packets:1,   /* ecn threshold in packets (1) or us (0) */
-		drop_early:1,	/* Drop at enqueue */
-		tspeed:16;	/* L4S FIFO time speed (in bit shifts) */
+		drop_early:1;	/* Drop at enqueue */
 	u32	ecn_thresh;	/* sojourn queue size to mark LL packets */
 	u32	l_drop;		/* L4S max probability where classic drop is
 				 * applied to all traffic, if 0 then no drop
@@ -173,8 +171,6 @@ static void dualpi2_params_init(struct dualpi2_params *params)
 	params->scal_mask = INET_ECN_ECT_1;
 	params->et_packets = 0;
 	params->ecn_thresh = 1000;
-	params->tshift = 40 * NSEC_PER_MSEC;
-	params->tspeed = 0;
 	params->l_drop = 0;
 	params->drop_early = false;
 	params->dequeue_ratio = 16;
@@ -294,8 +290,6 @@ static const struct nla_policy dualpi2_policy[TCA_DUALPI2_MAX + 1] = {
 	[TCA_DUALPI2_ET_PACKETS] = {.type = NLA_U32},
 	[TCA_DUALPI2_L_THRESH] = {.type = NLA_U32},
 	[TCA_DUALPI2_LIMIT] = {.type = NLA_U32},
-	[TCA_DUALPI2_T_SHIFT] = {.type = NLA_U32},
-	[TCA_DUALPI2_T_SPEED] = {.type = NLA_U16},
 	[TCA_DUALPI2_TARGET] = {.type = NLA_U32},
 	[TCA_DUALPI2_TUPDATE] = {.type = NLA_U32},
 	[TCA_DUALPI2_DROP_EARLY] = {.type = NLA_U32},
@@ -389,15 +383,6 @@ static int dualpi2_change(struct Qdisc *sch, struct nlattr *opt,
 	if (tb[TCA_DUALPI2_L_THRESH])
 		/* l_thresh is in us */
 		q->params.ecn_thresh = nla_get_u32(tb[TCA_DUALPI2_L_THRESH]);
-
-	if (tb[TCA_DUALPI2_T_SHIFT]) {
-		u32 t_shift = nla_get_u32(tb[TCA_DUALPI2_T_SHIFT]);
-
-		q->params.tshift = (u64)t_shift * NSEC_PER_USEC;
-	}
-
-	if (tb[TCA_DUALPI2_T_SPEED])
-                q->params.tspeed = nla_get_u16(tb[TCA_DUALPI2_T_SPEED]);
 
 	if (tb[TCA_DUALPI2_L_DROP]) {
 		u32 l_drop_percent = nla_get_u32(tb[TCA_DUALPI2_L_DROP]);
@@ -553,10 +538,8 @@ static int dualpi2_dump(struct Qdisc *sch, struct sk_buff *skb)
 	struct dualpi2_sched_data *q = qdisc_priv(sch);
 
 	u64 target_usec = q->params.target;
-        u64 tshift_usec = q->params.tshift;
 
         do_div(target_usec, NSEC_PER_USEC);
-        do_div(tshift_usec, NSEC_PER_USEC);
 
 	if (!opts)
 		goto nla_put_failure;
@@ -579,9 +562,6 @@ static int dualpi2_dump(struct Qdisc *sch, struct sk_buff *skb)
 	    nla_put_u32(skb, TCA_DUALPI2_K, q->params.k) ||
 	    nla_put_u32(skb, TCA_DUALPI2_ET_PACKETS, q->params.et_packets) ||
 	    nla_put_u32(skb, TCA_DUALPI2_L_THRESH, q->params.ecn_thresh) ||
-	    nla_put_u32(skb, TCA_DUALPI2_T_SHIFT,
-			tshift_usec) ||
-	    nla_put_u16(skb, TCA_DUALPI2_T_SPEED, q->params.tspeed) ||
 	    /* put before L_DROP because we are inside a multiline expression */
 	    nla_put_u32(skb, TCA_DUALPI2_DROP_EARLY, q->params.drop_early) ||
 	    nla_put_u32(skb, TCA_DUALPI2_WRR_RATIO, q->params.dequeue_ratio) ||
@@ -636,14 +616,7 @@ pick_packet:
 	qdelay_c = skb_sojourn_time(skb_c, now);
 
 	/* Dequeue according to the highest sojourn time */
-	if (skb_l &&
-	    (!skb_c
-	     /* Apply WRR dequeue if requested */
-	     || (q->params.dequeue_ratio
-		 && q->vars.dequeued_l < q->params.dequeue_ratio)
-	     /* Bias the selection to favour the L queue */
-	     || q->params.tshift + (qdelay_l << q->params.tspeed) >= qdelay_c
-	    )) {
+	if (skb_l && (!skb_c || q->vars.dequeued_l < q->params.dequeue_ratio)) {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 9, 0)
 		skb = __skb_dequeue(&q->l_queue->q);
 #else

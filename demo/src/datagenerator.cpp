@@ -64,10 +64,9 @@ void DataGenerator::startTA(bool ipc)
 
 void DataGenerator::updateTA(bool ipc)
 {
-	pthread_mutex_lock(&demo_data->mutex);
-        demo_data->ipclass = ipc;
-        pthread_mutex_unlock(&demo_data->mutex);
-	
+	pthread_mutex_lock(&tp->m_mutex);
+        tp->ipclass = ipc;
+        pthread_mutex_unlock(&tp->m_mutex);
 }
 void DataGenerator::startCompl()
 {
