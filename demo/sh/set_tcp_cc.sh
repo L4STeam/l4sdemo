@@ -4,6 +4,9 @@ if [ "$#" != "2" ]; then
         exit 65
 fi
 
+HERE=$(realpath $(dirname $0))
+source "${HERE}/__ssh_lib.sh"
+
 ip=$1
 tcp_cc=$2
 ecn_cc=0
@@ -18,8 +21,8 @@ if [ "$tcp_cc" == "bbr_ecn" ]; then
         ecn_cc='1'
 fi
 
-ssh -t $ip 'sudo sysctl -w net.ipv4.tcp_congestion_control='$tcp_cc
-ssh -t $ip 'sudo sysctl -w net.ipv4.tcp_ecn='$ecn_cc
-ssh -t $ip 'sudo service ssh restart'
+do_ssh $ip 'sudo sysctl -w net.ipv4.tcp_congestion_control='$tcp_cc
+do_ssh $ip 'sudo sysctl -w net.ipv4.tcp_ecn='$ecn_cc
+do_ssh $ip 'sudo service ssh restart'
 
 

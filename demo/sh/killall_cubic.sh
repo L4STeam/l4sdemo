@@ -2,4 +2,7 @@
 SERVER=$SERVER_B
 CLIENT=$CLIENT_B
 
-ssh ${SERVER} 'killall scp iperf'
+HERE=$(realpath $(dirname $0))
+source "${HERE}/__ssh_lib.sh"
+
+do_ssh ${SERVER} 'killall scp iperf'
