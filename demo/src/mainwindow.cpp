@@ -36,11 +36,11 @@ MainWindow::MainWindow(QWidget *parent)
     std::string pcapf = safe_getenv("PCAPFILTER");
     std::string dev = safe_getenv("IFACE");
     std::cout
-	    << "Client A: " << client_a << std::endl;
-	    << "Server A: " << server_a << std::endl;
-	    << "Client B: " << client_b << std::endl;
-	    << "Server B: " << server_b << std::endl;
-	    << "PCAPFILTER: " << pcapf << std::endl;
+	    << "Client A: " << client_a << std::endl
+	    << "Server A: " << server_a << std::endl
+	    << "Client B: " << client_b << std::endl
+	    << "Server B: " << server_b << std::endl
+	    << "PCAPFILTER: " << pcapf << std::endl
 	    << "INTERFACE: " << dev << std::endl;
     dctcpTitle
 	    << "$CLIENT_A [" << client_a
