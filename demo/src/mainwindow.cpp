@@ -36,13 +36,12 @@ MainWindow::MainWindow(QWidget *parent)
     std::string pcapf = safe_getenv("PCAPFILTER");
     std::string dev = safe_getenv("IFACE");
     std::cout
-	    << "Client A: " << client_a
-	    << "Server A: " << server_a
-	    << "Client B: " << client_b
-	    << "Server B: " << server_b
-	    << "PCAPFILTER: " << pcapf
-	    << "INTERFACE: " << dev
-	    << std::endl;
+	    << "Client A: " << client_a << std::endl;
+	    << "Server A: " << server_a << std::endl;
+	    << "Client B: " << client_b << std::endl;
+	    << "Server B: " << server_b << std::endl;
+	    << "PCAPFILTER: " << pcapf << std::endl;
+	    << "INTERFACE: " << dev << std::endl;
     dctcpTitle
 	    << "$CLIENT_A [" << client_a
 	    << "] <> $SERVER_A [" << server_a << "]";
@@ -119,8 +118,8 @@ MainWindow::MainWindow(QWidget *parent)
     Linkaqm *laqm = new Linkaqm();
     std::stringstream laqm_title;
     laqm_title
-	    << "Monitoring interface [" << dev << "] "
-	    << "with filter [" << pcapf << "]"
+	    << "Monitoring $IFACE[" << dev << "] "
+	    << "with $PCAPFILTER[" << pcapf << "]"
 	    <<std::endl;
     laqm->setTitle(laqm_title.str().c_str());
     secondColumn->addWidget(laqm);
