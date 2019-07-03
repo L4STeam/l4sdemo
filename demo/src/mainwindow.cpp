@@ -27,16 +27,28 @@ MainWindow::MainWindow(QWidget *parent)
 
     QVBoxLayout *firstColumn = new QVBoxLayout;
     mainLayout->addLayout(firstColumn);
-    std::stringstream dctcpTitle;
-    std::stringstream cubicTitle;
+    std::stringstream dctcpTitle, cubicTitle;
 
     std::string client_a = safe_getenv("CLIENT_A");
-    std::cout << "Client A: " << client_a << std::endl;
-    dctcpTitle << "Client A IP: " << client_a << " .";
-
+    std::string server_a = safe_getenv("SERVER_A");
     std::string client_b = safe_getenv("CLIENT_B");
-    std::cout << "Client B: " << client_b << std::endl;
-    cubicTitle << "Client B IP: " << client_b << " .";
+    std::string server_b = safe_getenv("SERVER_B");
+    std::string pcapf = safe_getenv("PCAPFILTER");
+    std::string dev = safe_getenv("IFACE");
+    std::cout
+	    << "Client A: " << client_a
+	    << "Server A: " << server_a
+	    << "Client B: " << client_b
+	    << "Server B: " << server_b
+	    << "PCAPFILTER: " << pcapf
+	    << "INTERFACE: " << dev
+	    << std::endl;
+    dctcpTitle
+	    << "$CLIENT_A [" << client_a
+	    << "] <> $SERVER_A [" << server_a << "]";
+    cubicTitle
+	    << "$CLIENT_B [" << client_b
+	    << "] <> $SERVER_B [" << server_b << "]";
 
     Client *dctcpclient = new Client(this,
 		    res_path("/sh/start_dctcp_download.sh").c_str(),
@@ -44,18 +56,18 @@ MainWindow::MainWindow(QWidget *parent)
 		    res_path("/sh/killdownload_dctcp.sh").c_str(),
 		    res_path("/sh/wb_dctcp.sh ").c_str(),
 		    res_path("/sh/rtt_dctcp.sh").c_str(),
-		    res_path("/sh/cc_dctcp.sh").c_str(), 
-		    res_path("/sh/al_dctcp.sh").c_str(), 
+		    res_path("/sh/cc_dctcp.sh").c_str(),
+		    res_path("/sh/al_dctcp.sh").c_str(),
 		    res_path("/sh/cbr_dctcp.sh").c_str(), Qt::blue);
     dctcpclient->setTitle(dctcpTitle.str().c_str());
     dctcpclient->updateCC(0);
     firstColumn->addWidget(dctcpclient);
     firstColumn->setAlignment(dctcpclient, Qt::AlignTop);
-    Client *cubicclient = new Client(this, 
-		    res_path("/sh/start_cubic_download.sh").c_str(), 
+    Client *cubicclient = new Client(this,
+		    res_path("/sh/start_cubic_download.sh").c_str(),
 		    res_path("/sh/killall_cubic.sh").c_str(),
 		    res_path("/sh/killdownload_cubic.sh").c_str(),
-		    res_path("/sh/wb_cubic.sh ").c_str(), 
+		    res_path("/sh/wb_cubic.sh ").c_str(),
 		    res_path("/sh/rtt_cubic.sh").c_str(),
 		    res_path("/sh/cc_cubic.sh").c_str(),
 		    res_path("/sh/al_cubic.sh").c_str(),
@@ -105,6 +117,12 @@ MainWindow::MainWindow(QWidget *parent)
     QVBoxLayout *secondColumn = new QVBoxLayout;
     mainLayout->addLayout(secondColumn);
     Linkaqm *laqm = new Linkaqm();
+    std::stringstream laqm_title;
+    laqm_title
+	    << "Monitoring interface [" << dev << "] "
+	    << "with filter [" << pcapf << "]"
+	    <<std::endl;
+    laqm->setTitle(laqm_title.str().c_str());
     secondColumn->addWidget(laqm);
 
 
@@ -124,7 +142,8 @@ MainWindow::MainWindow(QWidget *parent)
 
 
     QThread *generatorThread = new QThread();
-    DataGenerator *g = new DataGenerator(dctcpclient, cubicclient, laqm);
+    DataGenerator *g = new DataGenerator(dctcpclient, cubicclient, laqm,
+					 dev, pcapf);
     g->moveToThread(generatorThread);
     g->startCompl();
     connect(generatorThread, SIGNAL(started()), g, SLOT(startTA()));
@@ -154,15 +173,14 @@ void MainWindow::updateDctcpclientCC(int value)
 {
     QMutexLocker m(&dataMutex);
     dctcpclientCC = value;
-    checkCC();
+    /* checkCC(); */
 }
 
 void MainWindow::updateCubicclientCC(int value)
 {
     QMutexLocker m(&dataMutex);
     cubicclientCC = value;
-    checkCC();
-
+    /* checkCC(); */
 }
 
 void MainWindow::checkCC()
@@ -184,5 +202,5 @@ int MainWindow::checkIfUp(const char* ip)
     std::string command = res_path("/sh/check_if_up.sh");
     command = command + " " + ip;
     int res = system(command.c_str());
-    return res/256;	
+    return res/256;
 }

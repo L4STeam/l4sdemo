@@ -5,11 +5,15 @@
 #include <cstdlib>
 #include <unistd.h>
 
-DataGenerator::DataGenerator(Client *dctcpclient, Client *cubicclient, Linkaqm *linkaqm)
+DataGenerator::DataGenerator(Client *dctcpclient, Client *cubicclient,
+			     Linkaqm *linkaqm, std::string iface,
+			     std::string filter)
     : m_dctcpclient(dctcpclient)
     , m_cubicclient(cubicclient)
     , m_linkaqm(linkaqm)
     , taThread(0)
+    , pcap_iface(iface)
+    , pcap_filter(filter)
 {
      compl_ll_data = new QVector<QwtPoint3D>;
      compl_c_data = new QVector<QwtPoint3D>;
@@ -38,11 +42,6 @@ void DataGenerator::startTA(bool ipc)
     if (ipc)
         ipclass = 't';
 
-    std::string pcapf = safe_getenv("PCAPFILTER");
-    std::cout << "PCAPFILTER: " << pcapf << std::endl;
-    std::string dev = safe_getenv("IFACE");
-    std::cout << "INTERFACE: " << dev << std::endl;
-
     tp = new ThreadParam(sinterval, folder, false, nrs);
     setThreadParam(tp);
     demo_data = new DemoData();
@@ -57,7 +56,7 @@ void DataGenerator::startTA(bool ipc)
     tastat->moveToThread(tastatThread);
     connect(tastatThread, SIGNAL(started()), tastat, SLOT(start()));
 
-    setup_pcap(tp, dev.c_str(), pcapf);
+    setup_pcap(tp, pcap_iface.c_str(), pcap_filter);
     taThread->start();
     tastatThread->start();
 }

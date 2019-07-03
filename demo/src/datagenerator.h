@@ -20,7 +20,9 @@ class DataGenerator : public QObject
 {
     Q_OBJECT
 public:
-    explicit DataGenerator(Client *dctcpclient, Client *cubicclient, Linkaqm *linkqaqm);
+    explicit DataGenerator(Client *dctcpclient, Client *cubicclient,
+			   Linkaqm *linkqaqm, std::string iface,
+			   std::string filter);
     ~DataGenerator();
 
 public slots:
@@ -58,6 +60,7 @@ private:
     bool show_rate;
     pthread_mutex_t showrate_mutex;
     pthread_mutex_t linkcap_mutex;
+    std::string pcap_iface, pcap_filter;
 };
 
 #endif // DATAGENERATOR_H
