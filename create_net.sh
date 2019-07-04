@@ -77,9 +77,6 @@ if [ ! -f $DISTRIB_HDD ]; then
 	qemu-img resize -f qcow2 $DISTRIB_HDD 10G
 fi
 
-INIT_DATA_DIR=$HERE/l4sdemo
-
-
 function _net-make()
 {
 	local XML="$1.xml"
@@ -176,7 +173,7 @@ EOF
 password: ${LAB_PREFIX}
 users:
   - ${LAB_PREFIX}:
-    passwd: $(echo '${LAB_PREFIX}' |  mkpasswd -s --method=SHA-512 --rounds=4096)
+    passwd: $(printf ${LAB_PREFIX} |  mkpasswd -s --method=SHA-512 --rounds=4096)
     home: /home/${LAB_PREFIX}
     shell: /bin/bash
     lock_passwd: False
@@ -302,8 +299,14 @@ function provision-aqm()
 	local ipaddr=$(host_ip $MAC_AQM_SERVER)
 	wait-for-host $ipaddr
 	scp -r $INIT_DATA_DIR "${LAB_PREFIX}@$ipaddr:." || true
-    ssh $ipaddr "$@"
-	local demo_dir=$(basename $INIT_DATA_DIR)
+    # This monstruosity will fetch the tracked upstream repo name, extract the 
+    # corresponding remote fetch url, and convert it to use https to allow for 
+    # anonymous cloning. This definitely will never go wrong ...
+    local demo_dir=l4sdemo
+    giturl=$(git remote show -n $(echo $(git rev-parse --abbrev-ref master@{upstream}) | awk -F '/' '{print $1; }') | awk '/Fetch URL/{ print $3;}' | sed 's/git@/https:\/\//')
+    if ! ssh $ipaddr git clone $giturl $demo_dir; then
+        echo "Could not provision the AQM node as it could not clone the repo!"
+    fi
 	cat > environment.local << EOF
 #!/bin/bash
 for i in /sys/class/net/*; do
@@ -347,7 +350,7 @@ EOF
 
 function provision-hosts()
 {
-	for mac in $MAC_SERVER_A $MAC_SERVER_B $MAC_CLIENT_A $MAC_CLIENT_B; do
+	for mac in $MAC_SERVER_A $MAC_SERVER_B $MAC_CLIENT_A $MAC_CLIENT_B $MAC_AQM_SERVER; do
 		local ipaddr=$(host_ip $mac)
 		wait-for-host $ipaddr
         ssh $ipaddr "$@"
@@ -358,7 +361,7 @@ sudo systemctl daemon-reload
 sudo systemd-run --property='After=apt-daily.service apt-daily-upgrade.service' --wait /bin/true
 sudo env DEBIAN_FRONTEND=noninteractive apt-get -y purge unattended-upgrades
 sudo env DEBIAN_FRONTEND=noninteractive apt-get -y update
-sudo env DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install build-essential gcc
+sudo env DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install build-essential gcc git libelf-devel
 EOF
 	done
 }
@@ -371,7 +374,7 @@ function provision()
 	done
 	hosts="${hosts}' | sudo tee -a /etc/hosts\""
 	provision-hosts $hosts
-	provision-aqm $hosts
+	provision-aqm 
 }
 
 function usage()
