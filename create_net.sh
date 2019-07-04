@@ -361,7 +361,7 @@ sudo systemctl daemon-reload
 sudo systemd-run --property='After=apt-daily.service apt-daily-upgrade.service' --wait /bin/true
 sudo env DEBIAN_FRONTEND=noninteractive apt-get -y purge unattended-upgrades
 sudo env DEBIAN_FRONTEND=noninteractive apt-get -y update
-sudo env DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install build-essential gcc git libelf-devel
+sudo env DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install build-essential gcc git libelf-devel iperf
 EOF
 	done
 }
