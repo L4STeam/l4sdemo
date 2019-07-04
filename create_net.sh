@@ -302,6 +302,7 @@ function provision-aqm()
 	local ipaddr=$(host_ip $MAC_AQM_SERVER)
 	wait-for-host $ipaddr
 	scp -r $INIT_DATA_DIR "${LAB_PREFIX}@$ipaddr:." || true
+    ssh $ipaddr "$@"
 	local demo_dir=$(basename $INIT_DATA_DIR)
 	cat > environment.local << EOF
 #!/bin/bash
@@ -349,10 +350,10 @@ function provision-hosts()
 	for mac in $MAC_SERVER_A $MAC_SERVER_B $MAC_CLIENT_A $MAC_CLIENT_B; do
 		local ipaddr=$(host_ip $mac)
 		wait-for-host $ipaddr
+        ssh $ipaddr "$@"
 		do-ssh $ipaddr << EOF
 sudo systemctl disable --now apt-daily.timer
 sudo systemctl disable --now apt-daily-upgrade.timer
-$1
 sudo systemctl daemon-reload
 sudo systemd-run --property='After=apt-daily.service apt-daily-upgrade.service' --wait /bin/true
 sudo env DEBIAN_FRONTEND=noninteractive apt-get -y purge unattended-upgrades
@@ -364,13 +365,13 @@ EOF
 
 function provision()
 {
-	local hosts="bash -c 'echo -e \'"
+	local hosts="bash -c \"echo -e '"
 	for i in "${!IPADDR[@]}"; do
 		hosts="${hosts}${i} ${IPADDR[$i]}\\n"
 	done
-	hosts="${hosts}\' | sudo tee -a /etc/hosts'"
-	provision-hosts "$hosts"
-	provision-aqm "$hosts"
+	hosts="${hosts}' | sudo tee -a /etc/hosts\""
+	provision-hosts $hosts
+	provision-aqm $hosts
 }
 
 function usage()
