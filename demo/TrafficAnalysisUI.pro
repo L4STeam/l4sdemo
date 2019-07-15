@@ -40,11 +40,20 @@ HEADERS += \
     src/demodata.h \
     src/trafficanalyzerstat.h \
     src/resources.h
+exists(/usr/local/qwt-6.1.4) {
+    INCLUDEPATH += /usr/local/qwt-6.1.4/include
+    LIBS += -L/usr/local/qwt-6.1.4/lib -lqwt
+} else {
+    exists(/usr/include/qwt) {
+        INCLUDEPATH += /usr/include/qwt
+        LIBS += -lqwt
+    } else {
+        INCLUDEPATH += ../../Qt5.0.1/qwt-6.1.4/src
+        LIBS += -L../../Qt5.0.1/qwt-6.1.4/lib -lqwt
+    }
+}
 
-INCLUDEPATH += ../../Qt5.0.1/qwt-6.1.4/src
 INCLUDEPATH += ../traffic_analyzer
-
-LIBS += -L../../Qt5.0.1/qwt-6.1.4/lib -lqwt
 LIBS += -L../traffic_analyzer -lta -lpcap
 
 QMAKE_POST_LINK += sh/setcap.sh
