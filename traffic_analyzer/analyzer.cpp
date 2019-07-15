@@ -252,7 +252,9 @@ int setup_pcap(ThreadParam *param, const char *dev, std::string &pcapfilter)
         fprintf(stderr, "Couldn't install filter: %s\n", pcap_geterr(param->m_descr));
         return(2);
     }
+    return 0;
 }
+
 void setThreadParam(ThreadParam *param)
 {
     tp = param;

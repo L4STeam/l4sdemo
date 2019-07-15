@@ -19,8 +19,10 @@
 
 struct SrcDst {
 public:
-    SrcDst(uint8_t proto, in_addr_t srcip, uint16_t srcport, in_addr_t dstip, uint16_t dstport)
-      : m_proto(proto), m_srcip(srcip), m_srcport(srcport), m_dstip(dstip), m_dstport(dstport) {}
+    SrcDst(uint8_t proto, in_addr_t srcip, uint16_t srcport,
+	   in_addr_t dstip, uint16_t dstport)
+      : m_proto(proto), m_srcip(srcip), m_dstip(dstip),
+	m_srcport(srcport), m_dstport(dstport) {}
 
     uint8_t m_proto;
     in_addr_t m_srcip, m_dstip;
@@ -126,7 +128,7 @@ struct ThreadParam {
 public:
     // table of qdelay values (no need to decode all the time..)
     int qdelay_decode_table[QS_LIMIT];
-    
+
     uint64_t packets_captured;
     uint64_t packets_processed;
     uint64_t start;
