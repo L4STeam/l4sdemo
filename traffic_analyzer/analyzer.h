@@ -125,7 +125,6 @@ public:
 };
 
 struct ThreadParam {
-public:
     ThreadParam(uint32_t sinterval, std::string folder, bool ipc, uint32_t nrs);
 
     // table of qdelay values (no need to decode all the time..)
@@ -150,6 +149,7 @@ public:
     pthread_mutex_t quit_lock;
     int sample_id;
     std::vector<uint64_t> sample_times;
+    bool quiet;
 };
 
 uint64_t getStamp();

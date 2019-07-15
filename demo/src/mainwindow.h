@@ -28,8 +28,6 @@ private:
     int dctcpclientCC;
     int cubicclientCC;
     QMutex dataMutex;
-
-
 };
 
 #endif // MAINWINDOW_H

@@ -21,7 +21,6 @@ private:
 
     ThreadParam* tp;
     DemoData* dd;
-
 };
 
 #endif // TRAFFICANALYZERSTAT_H

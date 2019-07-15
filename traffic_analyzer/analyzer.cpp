@@ -58,6 +58,7 @@ ThreadParam::ThreadParam(uint32_t sinterval, std::string folder,
 	, m_folder(folder)
 	, ipclass(ipc)
 	, m_nrs(nrs)
+	, quiet(false)
 {
     // initialize qdelay conversion table
     for (int i = 0; i < QS_LIMIT; ++i) {
@@ -311,8 +312,10 @@ void addFlow(std::map<SrcDst,std::vector<FlowData>> *fd_pf, SrcDst srcdst, FlowD
     uint64_t samplelen = tp->db2->last - tp->db2->start;
     uint64_t r = fd.rate * 1000000 / samplelen;
 
-    printStreamInfo(srcdst);
-    printf(" %lu bits/sec\n", r);
+    if (!tp->quiet) {
+      printStreamInfo(srcdst);
+      printf(" %lu bits/sec\n", r);
+    }
 
     if (srcdst.m_proto == IPPROTO_TCP || srcdst.m_proto == IPPROTO_UDP || srcdst.m_proto == IPPROTO_ICMP) {
         if (fd_pf->count(srcdst) == 0) {
@@ -332,7 +335,7 @@ void addFlow(std::map<SrcDst,std::vector<FlowData>> *fd_pf, SrcDst srcdst, FlowD
 
 void processFD()
 {
-    if (tp->db2->fm.ecn_rate.size())
+    if (tp->db2->fm.ecn_rate.size() && !tp->quiet)
 	printf("Throughput per stream (ECN queue):\n");
     for (auto& kv: tp->db2->fm.ecn_rate) {
         const SrcDst& srcdst = kv.first;
@@ -341,7 +344,7 @@ void processFD()
         addFlow(&tp->fd_pf_ecn, srcdst, fd);
     }
 
-    if (tp->db2->fm.nonecn_rate.size())
+    if (tp->db2->fm.nonecn_rate.size() && !tp->quiet)
 	printf("Throughput per stream (non-ECN queue):\n");
     for (auto& kv: tp->db2->fm.nonecn_rate) {
         const SrcDst& srcdst = kv.first;

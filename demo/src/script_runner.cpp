@@ -15,7 +15,7 @@ ScriptRunner::ScriptRunner()
 	, alive(true)
 	, fake(false)
 {
-	if (safe_getenv("FAKE_SCRIPT_RUNNER", "") != "")
+	if (getenv_has_key("FAKE_SCRIPT_RUNNER"))
 		fake = true;
 }
 

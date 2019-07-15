@@ -26,4 +26,10 @@ static inline std::string safe_getenv(const char *key, std::string def)
     return std::string(v);
 }
 
+static inline bool getenv_has_key(const char *key)
+{
+    const char *v = std::getenv(key);
+    return v;
+}
+
 #endif

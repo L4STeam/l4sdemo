@@ -40,6 +40,7 @@ void DataGenerator::startTA(bool ipc)
     std::string folder = safe_getenv("TA_DEMO_FOLDER", "demo");
 
     tp = new ThreadParam(sinterval, folder, false, nrs);
+    tp->quiet = !getenv_has_key("VERBOSE");
     setThreadParam(tp);
     demo_data = new DemoData();
     demo_data->ipclass = ipc;
