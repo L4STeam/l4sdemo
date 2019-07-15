@@ -24,7 +24,8 @@ SOURCES += src/main.cpp \
     src/compltimesocket.cpp \
     src/linkaqm.cpp \
     src/demodata.cpp \
-    src/trafficanalyzerstat.cpp
+    src/trafficanalyzerstat.cpp \
+    src/script_runner.cpp
 
 HEADERS += \
     src/datagenerator.h \
@@ -39,7 +40,9 @@ HEADERS += \
     src/linkaqm.h \
     src/demodata.h \
     src/trafficanalyzerstat.h \
-    src/resources.h
+    src/resources.h \
+    src/script_runner.h
+
 exists(/usr/local/qwt-6.1.4) {
     INCLUDEPATH += /usr/local/qwt-6.1.4/include
     LIBS += -L/usr/local/qwt-6.1.4/lib -lqwt
