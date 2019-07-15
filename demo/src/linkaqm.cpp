@@ -1,5 +1,7 @@
 #include "linkaqm.h"
 #include "resources.h"
+#include "script_runner.h"
+
 #include <QColor>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -341,7 +343,7 @@ void Linkaqm::updateAQM(int num)
 	    << aqmIDList.at(num) << " " 
 	    << linkCapValues.at(linkindex) << " "
 	    << brttValues.at(brttindex);
-    system(command.str().c_str());
+    _RUN_SCRIPT(command.str());
 
 }
 
@@ -354,7 +356,7 @@ void Linkaqm::updateLink(int num)
 	    << aqmIDList.at(aqmindex) << " "
 	    << linkCapValues.at(num) << " "
 	    << brttValues.at(brttindex);
-    system(command.str().c_str());
+    _RUN_SCRIPT(command.str());
     linkChanged(linkCapValues.at(num));
 }
 
@@ -367,7 +369,7 @@ void Linkaqm::updateBrtt(int num)
 	    << aqmIDList.at(aqmindex) << " "
 	    << linkCapValues.at(linkindex) << " "
 	    << brttValues.at(num);
-    system(command.str().c_str());
+    _RUN_SCRIPT(command.str());
     brttChanged(brttValues.at(num));
 }
 

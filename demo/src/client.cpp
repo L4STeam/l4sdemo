@@ -1,5 +1,6 @@
 #include "client.h"
 #include "resources.h"
+#include "script_runner.h"
 #include <qwt_scale_draw.h>
 #include <qwt_scale_widget.h>
 #include <qwt_plot_marker.h>
@@ -98,7 +99,7 @@ Client::Client(QWidget *parent, const char* download_path, const char* killall_p
     readCBRList();
     readCCList();
     ssh_killall  = ssh_killall + "&";
-    system(ssh_killall.c_str());
+    _RUN_SCRIPT(ssh_killall);
     updateWebBrowsing0(true);
 
     QVBoxLayout *mainLayout = new QVBoxLayout;
@@ -302,7 +303,7 @@ Client::Client(QWidget *parent, const char* download_path, const char* killall_p
 
 Client::~Client()
 {
-    system(ssh_killall.c_str());
+    _RUN_SCRIPT(ssh_killall);
 }
 
 void Client::updateNumDownloads(int num)
@@ -315,8 +316,8 @@ void Client::startDownloads()
 {
     std::stringstream command;
     command << ssh_download << " "<<  nrFlows << " &";
-    system(ssh_killdownload.c_str());
-    system(command.str().c_str());
+    _RUN_SCRIPT(ssh_killdownload);
+    _RUN_SCRIPT(command.str());
 }
 
 void Client::updateSamples(std::vector<double> rsamples, double cbr_rate, double al_rate,
@@ -411,7 +412,7 @@ void Client::updateWebBrowsing0(bool toggled)
     if (toggled) {
         std::string command = ssh_wb;
         command = command + "0 &";
-        system(command.c_str());
+        _RUN_SCRIPT(command);
     }
 }
 
@@ -420,7 +421,7 @@ void Client::updateWebBrowsing10(bool toggled)
     if (toggled) {
         std::stringstream command;
         command << ssh_wb << "10 " << getLinkCap() << " &";
-        system(command.str().c_str());
+        _RUN_SCRIPT(command.str());
     }
 }
 
@@ -429,7 +430,7 @@ void Client::updateWebBrowsing100(bool toggled)
     if (toggled) {
         std::stringstream command;
         command << ssh_wb << "100 " << getLinkCap() << " &";
-        system(command.str().c_str());
+        _RUN_SCRIPT(command.str());
     }
 }
 
@@ -502,7 +503,7 @@ void Client::updateRTT(int num)
 {
     std::stringstream command;
     command << ssh_rtt << " " << rttValues.at(num);
-    system(command.str().c_str());
+    _RUN_SCRIPT(command.str());
     rttChanged(rttValues.at(num));
 }
 
@@ -546,14 +547,14 @@ void Client::updateAL(bool value)
 {
     std::stringstream command;
     command << ssh_al << " " << int(value) << "&";
-    system(command.str().c_str());
+    _RUN_SCRIPT(command.str());
 }
 
 void Client::updateCBR(int value)
 {
     std::stringstream command;
     command << ssh_cbr << " " << getCBRRate(value) << "&";
-    system(command.str().c_str());
+    _RUN_SCRIPT(command.str());
 }
 
 int Client::getCBRRate(int value)
@@ -576,32 +577,32 @@ void Client::updateCC(int value)
     if (ccSelect->currentIndex() != value)
         ccSelect->setCurrentIndex(value);
     std::stringstream command;
-    system(ssh_killall.c_str());
+    _RUN_SCRIPT(ssh_killall);
     command << ssh_cc << " " << ccValues.at(value);
-    system(command.str().c_str());
+    _RUN_SCRIPT(command.str());
 
     ccChanged(value);
     startDownloads();
     if (btnwb10->isChecked()) {
         std::stringstream command;
         command << ssh_wb << "10 " << getLinkCap() << " &";
-        system(command.str().c_str());
+        _RUN_SCRIPT(command.str());
     } else if (btnwb100->isChecked()) {
         std::stringstream command;
         command << ssh_wb << "100 " << getLinkCap() << " &";
-        system(command.str().c_str());
+        _RUN_SCRIPT(command.str());
     }
 
     int cbrrate = getCBRRate(cbrSelect->currentIndex());
     if (cbrrate > 0) {
         std::stringstream command;
         command << ssh_cbr << " " << getCBRRate(value) << "&";
-        system(command.str().c_str());
+        _RUN_SCRIPT(command.str());
     }
    /* if (alCheckb->isChecked()) {
         std::stringstream command;
         command << ssh_al << " " << int(value) << "&";
-        system(command.str().c_str());
+        _RUN_SCRIPT(command.str());
     }*/
 }
 
