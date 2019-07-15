@@ -302,6 +302,8 @@ Client::Client(QWidget *parent, const char* download_path,
 Client::~Client()
 {
     _RUN_SCRIPT(ssh_killall);
+    _RUN_SCRIPT(ssh_killdownload);
+    _RUN_SCRIPT(ssh_wb + " 0");
 }
 
 void Client::updateNumDownloads(int num)
