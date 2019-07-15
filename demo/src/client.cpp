@@ -95,7 +95,6 @@ Client::Client(QWidget *parent, const char* download_path,
     readRTTList();
     readCBRList();
     readCCList();
-    ssh_killall  = ssh_killall + "&";
     _RUN_SCRIPT(ssh_killall);
     updateWebBrowsing0(true);
 
@@ -314,9 +313,10 @@ void Client::updateNumDownloads(int num)
 void Client::startDownloads()
 {
     std::stringstream command;
-    command << ssh_download << " "<<  nrFlows << " &";
+    command << ssh_download << " " <<  nrFlows;
     _RUN_SCRIPT(ssh_killdownload);
-    _RUN_SCRIPT(command.str());
+    if (nrFlows > 0)
+	_RUN_SCRIPT(command.str());
 }
 
 void Client::updateSamples(std::vector<double> rsamples, double cbr_rate, double al_rate,
@@ -408,18 +408,15 @@ void Client::commitData()
 
 void Client::updateWebBrowsing0(bool toggled)
 {
-    if (toggled) {
-        std::string command = ssh_wb;
-        command = command + "0 &";
-        _RUN_SCRIPT(command);
-    }
+    if (toggled)
+        _RUN_SCRIPT(ssh_wb + "0");
 }
 
 void Client::updateWebBrowsing10(bool toggled)
 {
     if (toggled) {
         std::stringstream command;
-        command << ssh_wb << "10 " << getLinkCap() << " &";
+        command << ssh_wb << "10 " << getLinkCap();
         _RUN_SCRIPT(command.str());
     }
 }
@@ -428,7 +425,7 @@ void Client::updateWebBrowsing100(bool toggled)
 {
     if (toggled) {
         std::stringstream command;
-        command << ssh_wb << "100 " << getLinkCap() << " &";
+        command << ssh_wb << "100 " << getLinkCap();
         _RUN_SCRIPT(command.str());
     }
 }
@@ -545,14 +542,14 @@ void Client::setComplWOHS(bool value)
 void Client::updateAL(bool value)
 {
     std::stringstream command;
-    command << ssh_al << " " << int(value) << "&";
+    command << ssh_al << " " << int(value);
     _RUN_SCRIPT(command.str());
 }
 
 void Client::updateCBR(int value)
 {
     std::stringstream command;
-    command << ssh_cbr << " " << getCBRRate(value) << "&";
+    command << ssh_cbr << " " << getCBRRate(value);
     _RUN_SCRIPT(command.str());
 }
 
@@ -580,24 +577,24 @@ void Client::updateCC(int value)
     startDownloads();
     if (btnwb10->isChecked()) {
         std::stringstream command;
-        command << ssh_wb << "10 " << getLinkCap() << " &";
+        command << ssh_wb << "10 " << getLinkCap();
         _RUN_SCRIPT(command.str());
     } else if (btnwb100->isChecked()) {
         std::stringstream command;
-        command << ssh_wb << "100 " << getLinkCap() << " &";
+        command << ssh_wb << "100 " << getLinkCap();
         _RUN_SCRIPT(command.str());
     }
 
     int cbrrate = getCBRRate(cbrSelect->currentIndex());
     if (cbrrate > 0) {
         std::stringstream command;
-        command << ssh_cbr << " " << getCBRRate(value) << "&";
+        command << ssh_cbr << " " << getCBRRate(value);
         _RUN_SCRIPT(command.str());
     }
    /* if (alCheckb->isChecked()) {
         std::stringstream command;
-        command << ssh_al << " " << int(value) << "&";
-        _RUN_SCRIPT(command.str());
+        command << ssh_al << " " << int(value);
+        _RUN_SCRIPT(ssh_al.str());
     }*/
 }
 
