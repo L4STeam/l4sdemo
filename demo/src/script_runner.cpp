@@ -3,6 +3,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <execinfo.h>
 
 
 ScriptRunner ScriptRunner::_instance;
@@ -26,6 +27,19 @@ ScriptRunner::~ScriptRunner()
 
 void ScriptRunner::run_script(std::string path)
 {
+	if (fake) {
+		/* Print stack trace for debugging */
+		int i, nptrs;
+		void *buffer[10];
+		char **strings;
+
+		nptrs = backtrace(buffer, 10);
+		if (!(strings = backtrace_symbols(buffer, nptrs)))
+			return;
+		std::cerr << "Enqueueing " << path << " from:" << std::endl;
+		for (i = 1; i < nptrs; i++)
+			std::cerr << "\t" << strings[i] << std::endl;
+	}
 	{
 		std::unique_lock<std::mutex> lock(q_mutex);
 		q.push(path);
@@ -47,7 +61,8 @@ void ScriptRunner::run_loop()
 
 void ScriptRunner::exec_script(std::string &path)
 {
-	std::cerr << "-- " << (fake ? "Faking " : "")
+	std::cerr
+		<< "-- " << (fake ? "Faking " : "")
 		<< "Running [" << path << "]" << std::endl;
 	if (!fake)
 		std::system(path.c_str());
