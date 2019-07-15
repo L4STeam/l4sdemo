@@ -315,8 +315,7 @@ void Client::startDownloads()
     std::stringstream command;
     command << ssh_download << " " <<  nrFlows;
     _RUN_SCRIPT(ssh_killdownload);
-    if (nrFlows > 0)
-	_RUN_SCRIPT(command.str());
+    _RUN_SCRIPT(command.str());
 }
 
 void Client::updateSamples(std::vector<double> rsamples, double cbr_rate, double al_rate,
