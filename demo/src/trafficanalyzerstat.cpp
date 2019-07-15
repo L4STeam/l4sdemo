@@ -147,8 +147,8 @@ void TrafficAnalyzerStat::getRateDropMarkStat()
         dd->drop_nonecn = floor((double)drops_nonecn*100/(dd->packets_nonecn + drops_nonecn) / scale + 0.5) * scale;
     }
     dd->util = ceil((double)(rate_ecn + rate_nonecn)*100 / dd->linkcap);
-    if (dd->util > 100)
-	dd->util = 100;
+    /* if (dd->util > 100) */
+	/* dd->util = 100; */
 
     double remaining_bw = dd->linkcap - dd->cbrrate_ecn - dd->cbrrate_nonecn;
     tot_greedy_flows = greedy_flows_ecn + greedy_flows_nonecn;

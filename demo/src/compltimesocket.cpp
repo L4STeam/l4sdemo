@@ -34,7 +34,7 @@ void ComplTimeSocket::start()
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0)
-        std::cerr << "ERROR opening socket" << std::endl;
+        std::cerr << "ERROR opening socket for port " << portnr;
     bzero((char *) &serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = INADDR_ANY;
@@ -43,7 +43,7 @@ void ComplTimeSocket::start()
     int tr=1;
     if (setsockopt(sockfd,SOL_SOCKET,SO_REUSEADDR,&tr,sizeof(int)) == -1){
 	std::stringstream ss;
-        ss << "ERROR setting sock opt on port " << portnr << std::endl;
+        ss << "ERROR setting sock opt on port " << portnr;
 	perror(ss.str().c_str());
         close(sockfd);
         return;
@@ -51,7 +51,7 @@ void ComplTimeSocket::start()
 
     if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
 	std::stringstream ss;
-        ss << "ERROR when binding on port " << portnr << std::endl;
+        ss << "ERROR when binding on port " << portnr;
 	perror(ss.str().c_str());
         close(sockfd);
         return;
@@ -62,7 +62,7 @@ void ComplTimeSocket::start()
     if (newsockfd < 0){
         close(newsockfd);
 	std::stringstream ss;
-        ss << "ERROR on accept on port " << portnr << std::endl;
+        ss << "ERROR on accept on port " << portnr;
 	perror(ss.str().c_str());
         return;
     }
