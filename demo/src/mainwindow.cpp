@@ -4,6 +4,7 @@
 #include "client.h"
 #include "linkaqm.h"
 #include "datagenerator.h"
+#include "script_runner.h"
 
 #include <QLayout>
 
@@ -165,6 +166,11 @@ MainWindow::MainWindow(QWidget *parent)
     connect(bip, SIGNAL(toggled(bool)), g, SLOT(setIPClass(bool)));
 
     generatorThread->start();
+}
+
+MainWindow::~MainWindow()
+{
+	ScriptRunner::instance().stop();
 }
 
 void MainWindow::updateDctcpclientCC(int value)

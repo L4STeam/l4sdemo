@@ -17,6 +17,7 @@ public:
 	static ScriptRunner& instance() { return _instance; }
 	~ScriptRunner();
 	void run_script(std::string path);
+	void stop();
 
 private:
 	ScriptRunner();

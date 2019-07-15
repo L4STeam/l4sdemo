@@ -21,6 +21,12 @@ ScriptRunner::ScriptRunner()
 
 ScriptRunner::~ScriptRunner()
 {
+	if (alive)
+		stop();
+}
+
+void ScriptRunner::stop()
+{
 	alive = false;
 	thr.join();
 }
