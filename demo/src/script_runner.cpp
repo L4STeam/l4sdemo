@@ -28,6 +28,7 @@ ScriptRunner::~ScriptRunner()
 void ScriptRunner::stop()
 {
 	alive = false;
+	q_cond.notify_one();
 	thr.join();
 }
 
@@ -60,7 +61,11 @@ void ScriptRunner::run_loop()
 {
 	while (alive || !q.empty()) {
 		std::unique_lock<std::mutex> lock(q_mutex);
-		while (q.empty()) { q_cond.wait(lock); }
+		while (q.empty()) {
+			q_cond.wait(lock);
+			if (!alive)
+				return;
+		}
 		std::string script = q.front();
 		q.pop();
 		exec_script(script);
