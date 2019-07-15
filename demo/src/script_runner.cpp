@@ -30,15 +30,17 @@ void ScriptRunner::run_script(std::string path)
 	if (fake) {
 		/* Print stack trace for debugging */
 		int i, nptrs;
-		void *buffer[10];
+		void *buffer[100];
 		char **strings;
 
-		nptrs = backtrace(buffer, 10);
+		nptrs = backtrace(buffer, 100);
 		if (!(strings = backtrace_symbols(buffer, nptrs)))
 			return;
 		std::cerr << "Enqueueing " << path << " from:" << std::endl;
 		for (i = 1; i < nptrs; i++)
 			std::cerr << "\t" << strings[i] << std::endl;
+		std::cerr << "==================================" << std::endl;
+		free(strings);
 	}
 	{
 		std::unique_lock<std::mutex> lock(q_mutex);

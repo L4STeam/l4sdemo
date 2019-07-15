@@ -56,9 +56,9 @@ MainWindow::MainWindow(QWidget *parent)
 		    res_path("/sh/rtt_dctcp.sh").c_str(),
 		    res_path("/sh/cc_dctcp.sh").c_str(),
 		    res_path("/sh/al_dctcp.sh").c_str(),
-		    res_path("/sh/cbr_dctcp.sh").c_str(), Qt::blue);
+		    res_path("/sh/cbr_dctcp.sh").c_str(),
+		    Qt::blue, 0);
     dctcpclient->setTitle(dctcpTitle.str().c_str());
-    dctcpclient->updateCC(0);
     firstColumn->addWidget(dctcpclient);
     firstColumn->setAlignment(dctcpclient, Qt::AlignTop);
     Client *cubicclient = new Client(this,
@@ -69,9 +69,9 @@ MainWindow::MainWindow(QWidget *parent)
 		    res_path("/sh/rtt_cubic.sh").c_str(),
 		    res_path("/sh/cc_cubic.sh").c_str(),
 		    res_path("/sh/al_cubic.sh").c_str(),
-		    res_path("/sh/cbr_cubic.sh").c_str(), QColor(255, 157, 0));
+		    res_path("/sh/cbr_cubic.sh").c_str(),
+		    QColor(255, 157, 0), 1);
     cubicclient->setTitle(cubicTitle.str().c_str());
-    cubicclient->updateCC(1);
     firstColumn->addWidget(cubicclient);
     firstColumn->setAlignment(cubicclient, Qt::AlignBottom);
 

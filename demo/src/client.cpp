@@ -59,7 +59,8 @@ private:
 Client::Client(QWidget *parent, const char* download_path,
 	       const char* killall_path, const char* killdownload_path,
                const char* wb_path, const char* rtt_path, const char* cc_path,
-               const char* al_path, const char* cbr_path, const QColor& color)
+               const char* al_path, const char* cbr_path, const QColor& color,
+	       int init_cc)
     : QGroupBox(parent)
     , linkcap(40)
     , displayNumDownloads(0)
@@ -295,6 +296,8 @@ Client::Client(QWidget *parent, const char* download_path,
   //  connect(alCheckb, SIGNAL(toggled(bool)), this, SLOT(updateAL(bool)));
     connect(cbrSelect, SIGNAL(currentIndexChanged(int)), this, SLOT(updateCBR(int)));
     connect(ccSelect, SIGNAL(currentIndexChanged(int)), this, SLOT(updateCC(int)));
+
+    ccSelect->setCurrentIndex(init_cc);
 }
 
 Client::~Client()
@@ -568,10 +571,6 @@ void Client::updateLinkCap(int value)
 
 void Client::updateCC(int value)
 {
-    if (ccValues.size() < (unsigned)value + 1U)
-        return;
-    if (ccSelect->currentIndex() != value)
-        ccSelect->setCurrentIndex(value);
     std::stringstream command;
     _RUN_SCRIPT(ssh_killall);
     command << ssh_cc << " " << ccValues.at(value);

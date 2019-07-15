@@ -27,8 +27,10 @@ class Client : public QGroupBox
 public:
     explicit Client(QWidget *parent, const char* download_path,
 		    const char* killall_path, const char* killdownload_path,
-                    const char* wb_path, const char* rtt_path, const char* cc_path,
-                    const char* al_path, const char* cbr_path, const QColor &color = Qt::blue);
+                    const char* wb_path, const char* rtt_path,
+		    const char* cc_path, const char* al_path,
+		    const char* cbr_path, const QColor &color = Qt::blue,
+		    int init_cc=0);
     ~Client();
 
 signals:
@@ -37,11 +39,14 @@ signals:
     int rttChanged(int);
 
 public slots:
+    void updateSamples(std::vector<double> rsamples, double cbr_rate,
+		       double al_rate, QVector<QwtPoint3D>& csamples,
+		       QVector<QwtPoint3D>& csamples_hs);
+    void updateFairRate(double rate, QString caption);
+
+private slots:
     void updateNumDownloads(int num);
     void startDownloads();
-    void updateSamples(std::vector<double> rsamples, double cbr_rate, double al_rate,
-                       QVector<QwtPoint3D>& csamples,  QVector<QwtPoint3D>& csamples_hs);
-    void updateFairRate(double rate, QString caption);
     void commitData();
     void updateWebBrowsing0(bool toggled);
     void updateWebBrowsing10(bool toggled);

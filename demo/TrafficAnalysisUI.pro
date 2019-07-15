@@ -60,5 +60,34 @@ INCLUDEPATH += ../traffic_analyzer
 LIBS += -L../traffic_analyzer -lta -lpcap
 
 @QMAKE_STRIP=
-QMAKE_POST_LINK += sh/setcap.sh
+#QMAKE_POST_LINK += sh/setcap.sh
 QMAKE_LFLAGS += -rdynamic
+
+DISTFILES += \
+    config/aqm_list \
+    config/brtt_list \
+    config/cbr_list \
+    config/cc_list \
+    config/ertt_list \
+    config/link_cap_list \
+    sh/__ssh_lib.sh \
+    sh/al_cubic.sh \
+    sh/al_dctcp.sh \
+    sh/cbr_cubic.sh \
+    sh/cbr_dctcp.sh \
+    sh/cc_cubic.sh \
+    sh/cc_dctcp.sh \
+    sh/check_if_up.sh \
+    sh/killall_cubic.sh \
+    sh/killall_dctcp.sh \
+    sh/killdownload_cubic.sh \
+    sh/killdownload_dctcp.sh \
+    sh/rtt_cubic.sh \
+    sh/rtt_dctcp.sh \
+    sh/set_aqm_link.sh \
+    sh/set_tcp_cc.sh \
+    sh/setcap.sh \
+    sh/start_cubic_download.sh \
+    sh/start_dctcp_download.sh \
+    sh/wb_cubic.sh \
+    sh/wb_dctcp.sh
