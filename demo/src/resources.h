@@ -18,4 +18,12 @@ static inline std::string safe_getenv(const char *key)
     return std::string(v);
 }
 
+static inline std::string safe_getenv(const char *key, std::string def)
+{
+    const char *v = std::getenv(key);
+    if (!v)
+	    return def;
+    return std::string(v);
+}
+
 #endif
