@@ -8,7 +8,7 @@ QT       += core gui widgets
 
 TARGET = L4SDemo
 CONFIG   -= app_bundle
-CONFIG += c++11 release
+CONFIG += c++11 release force_debug_info
 TEMPLATE = app
 
 
@@ -59,4 +59,6 @@ exists(/usr/local/qwt-6.1.4) {
 INCLUDEPATH += ../traffic_analyzer
 LIBS += -L../traffic_analyzer -lta -lpcap
 
+@QMAKE_STRIP=
 QMAKE_POST_LINK += sh/setcap.sh
+QMAKE_LFLAGS += -rdynamic
