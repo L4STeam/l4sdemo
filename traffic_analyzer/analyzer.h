@@ -126,6 +126,8 @@ public:
 
 struct ThreadParam {
 public:
+    ThreadParam(uint32_t sinterval, std::string folder, bool ipc, uint32_t nrs);
+
     // table of qdelay values (no need to decode all the time..)
     int qdelay_decode_table[QS_LIMIT];
 
@@ -142,7 +144,6 @@ public:
     uint32_t m_nrs;
     std::map<SrcDst,std::vector<FlowData>> fd_pf_ecn;
     std::map<SrcDst,std::vector<FlowData>> fd_pf_nonecn;
-    ThreadParam(uint32_t sinterval, std::string folder, bool ipc, uint32_t nrs);
     void swapDB();
     volatile bool quit;
     pthread_cond_t quit_cond;

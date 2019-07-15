@@ -52,7 +52,12 @@ uint64_t getStamp()
     return ((uint64_t)monotime.tv_sec) * US_PER_S + monotime.tv_nsec / NSEC_PER_US;
 }
 
-ThreadParam::ThreadParam( uint32_t sinterval, std::string folder, bool ipc, uint32_t nrs)
+ThreadParam::ThreadParam(uint32_t sinterval, std::string folder,
+			 bool ipc, uint32_t nrs)
+	: m_sinterval(sinterval)
+	, m_folder(folder)
+	, ipclass(ipc)
+	, m_nrs(nrs)
 {
     // initialize qdelay conversion table
     for (int i = 0; i < QS_LIMIT; ++i) {
@@ -67,10 +72,6 @@ ThreadParam::ThreadParam( uint32_t sinterval, std::string folder, bool ipc, uint
     pthread_mutexattr_t errorcheck;
     pthread_mutexattr_init(&errorcheck);
     pthread_mutex_init(&m_mutex, &errorcheck);
-    m_sinterval = sinterval;
-    m_folder = folder;
-    ipclass = ipc;
-    m_nrs = nrs;
 
     packets_captured = 0;
     packets_processed = 0;
