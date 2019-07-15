@@ -67,7 +67,6 @@ void ComplTimeSocket::start()
     }
     close(sockfd);
 
-    struct timeval start_time,end_time,diff_time;
     while (newsockfd >= 0) {
         char buffer[BUFFER_SIZE];
         int nr_samples = 0;
@@ -77,7 +76,7 @@ void ComplTimeSocket::start()
         std::cout << "reading completion data" << std::endl;
 
         n = read(newsockfd,&bytes_to_get,sizeof(int));
-        if (n < sizeof(int)) {
+        if (n < (int)sizeof(int)) {
             std::cerr << "ERROR reading from socket" << std::endl;
             close(newsockfd);
             break;

@@ -8,10 +8,10 @@
 DataGenerator::DataGenerator(Client *dctcpclient, Client *cubicclient,
 			     Linkaqm *linkaqm, std::string iface,
 			     std::string filter)
-    : m_dctcpclient(dctcpclient)
+    : taThread(0)
+    , m_dctcpclient(dctcpclient)
     , m_cubicclient(cubicclient)
     , m_linkaqm(linkaqm)
-    , taThread(0)
     , pcap_iface(iface)
     , pcap_filter(filter)
 {
@@ -37,10 +37,7 @@ void DataGenerator::startTA(bool ipc)
 {
     uint32_t sinterval = 1000;
     uint32_t nrs = 0;
-    char *folder = "demo";
-    char ipclass = 'f';
-    if (ipc)
-        ipclass = 't';
+    std::string folder = safe_getenv("TA_DEMO_FOLDER", "demo");
 
     tp = new ThreadParam(sinterval, folder, false, nrs);
     setThreadParam(tp);

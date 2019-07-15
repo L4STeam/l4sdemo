@@ -5,7 +5,6 @@
 #include "linkaqm.h"
 #include "datagenerator.h"
 
-
 #include <QLayout>
 
 #include <QPushButton>

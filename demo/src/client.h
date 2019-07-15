@@ -25,7 +25,8 @@ class Client : public QGroupBox
 {
     Q_OBJECT
 public:
-    explicit Client(QWidget *parent, const char* download_path, const char* killall_path, const char* killdownload_path,
+    explicit Client(QWidget *parent, const char* download_path,
+		    const char* killall_path, const char* killdownload_path,
                     const char* wb_path, const char* rtt_path, const char* cc_path,
                     const char* al_path, const char* cbr_path, const QColor &color = Qt::blue);
     ~Client();

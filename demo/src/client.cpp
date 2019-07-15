@@ -20,21 +20,18 @@
 
 class NoScaleDraw : public QwtScaleDraw {
 protected:
-    virtual void 	drawTick (QPainter *, double val, double len) const {}
-    virtual void 	drawBackbone (QPainter *) const {}
-    virtual void 	drawLabel (QPainter *, double val) const {}
+    virtual void drawTick(QPainter *p, double val, double len) const
+	{ (void)p; (void)val; (void)len; }
+    virtual void drawBackbone(QPainter *p) const { (void)p; }
+    virtual void drawLabel(QPainter *p, double val) const { (void)p; (void)val; }
 };
 
-class UnrelatedNumberScaleDraw : public QwtScaleDraw {
+class UnrelatedNumberScaleDraw : public NoScaleDraw {
 public:
-    UnrelatedNumberScaleDraw()
-        : unrelatedNumber(0.0)
-    {}
+    UnrelatedNumberScaleDraw() : unrelatedNumber(0.0) {}
     void setNumber(double num) { unrelatedNumber = num;}
     void setUnit(QString u) { unit = u; }
 protected:
-    virtual void 	drawTick (QPainter *, double val, double len) const {}
-    virtual void 	drawBackbone (QPainter *) const {}
     virtual void 	drawLabel (QPainter *painter, double value) const
     {
         if (value < 99 && value > 101) return;
@@ -59,18 +56,19 @@ private:
     QString unit;
 };
 
-Client::Client(QWidget *parent, const char* download_path, const char* killall_path, const char* killdownload_path,
+Client::Client(QWidget *parent, const char* download_path,
+	       const char* killall_path, const char* killdownload_path,
                const char* wb_path, const char* rtt_path, const char* cc_path,
                const char* al_path, const char* cbr_path, const QColor& color)
     : QGroupBox(parent)
     , linkcap(40)
     , displayNumDownloads(0)
     , noScaleDraw(0)
-    , unrelatedNumberScaleDraw(0)
     , noScaleDrawAL(0)
-    , rate(0.0)
+    , unrelatedNumberScaleDraw(0)
+    , complHS(true)
     , nrFlows(0)
-    , complHS(1)
+    , rate(0.0)
     , ssh_killall(killall_path)
     , ssh_killdownload(killdownload_path)
     , ssh_download(download_path)
@@ -79,8 +77,6 @@ Client::Client(QWidget *parent, const char* download_path, const char* killall_p
     , ssh_al(al_path)
     , ssh_cbr(cbr_path)
     , ssh_cc(cc_path)
-
-
 {
 
     QFont axisFont("Times New Roman", 10);
@@ -339,7 +335,7 @@ void Client::updateSamples(std::vector<double> rsamples, double cbr_rate, double
 
     int nr = 0;
     for (auto it = csamples.begin(), it_hs = csamples_hs.begin();
-         it != csamples.end(), it_hs != csamples_hs.end(); ++it, ++it_hs){
+         it != csamples.end() && it_hs != csamples_hs.end(); ++it, ++it_hs){
         CData.append(*it);
         CData_hs.append(*it_hs);
         nr++;
@@ -572,7 +568,7 @@ void Client::updateLinkCap(int value)
 
 void Client::updateCC(int value)
 {
-    if (ccValues.size() < value+1)
+    if (ccValues.size() < (unsigned)value + 1U)
         return;
     if (ccSelect->currentIndex() != value)
         ccSelect->setCurrentIndex(value);

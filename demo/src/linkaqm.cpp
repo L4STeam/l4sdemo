@@ -258,7 +258,7 @@ Linkaqm::Linkaqm(QWidget *parent)
     dataDisplayLayout->addLayout(chistory, 3,1,1,1);
     dataDisplayLayout->addLayout(cqueue, 3,3,1,1);
     mainLayout->addLayout(dataDisplayLayout);
-    
+
     connect(this, SIGNAL(scheduleRepaint()), this, SLOT(commitData()));connect(combollmark, SIGNAL(currentIndexChanged(int)), this, SLOT(updateComboLLMark(int)));
     connect(combolldrop, SIGNAL(currentIndexChanged(int)), this, SLOT(updateComboLLDrop(int)));
     connect(combocmark, SIGNAL(currentIndexChanged(int)), this, SLOT(updateComboCMark(int)));
@@ -340,7 +340,7 @@ void Linkaqm::updateAQM(int num)
     int linkindex = linkselect->currentIndex();
     int brttindex = brttselect->currentIndex();
     command << res_path("/sh/set_aqm_link.sh") << " "
-	    << aqmIDList.at(num) << " " 
+	    << aqmIDList.at(num) << " "
 	    << linkCapValues.at(linkindex) << " "
 	    << brttValues.at(brttindex);
     _RUN_SCRIPT(command.str());

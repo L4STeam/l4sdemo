@@ -138,9 +138,9 @@ void TrafficAnalyzerStat::getRateDropMarkStat()
     }
 
     double scale = 0.01;
-    if (dd->packets_ecn + drops_ecn > 0)
+    if (dd->packets_ecn > 0)
         dd->mark_ecn = floor((double)marks_ecn*100/dd->packets_ecn / scale + 0.5) * scale;
-        if (drops_ecn > 0)
+    if (dd->packets_ecn + drops_ecn > 0)
             dd->drop_ecn = floor((double)drops_ecn*100/(dd->packets_ecn + drops_ecn) / scale + 0.5) * scale;
     if (dd->packets_nonecn + drops_nonecn > 0) {
         dd->drop_nonecn = floor((double)drops_nonecn*100/(dd->packets_nonecn + drops_nonecn) / scale + 0.5) * scale;
@@ -218,7 +218,7 @@ void TrafficAnalyzerStat::start()
         elapsed = getStamp() - tp->start;
         next = ((uint64_t) tp->sample_id + 2) * tp->m_sinterval * 1000; // convert ms to us
 
-        int process_time = getStamp() - tp->db2->last;
+        uint64_t process_time = getStamp() - tp->db2->last;
         if (elapsed < next) {
             uint64_t sleeptime = next - elapsed;
 	    if (process_time >= sleeptime)
