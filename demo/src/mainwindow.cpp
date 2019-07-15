@@ -141,8 +141,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 
     QThread *generatorThread = new QThread();
-    DataGenerator *g = new DataGenerator(dctcpclient, cubicclient, laqm,
-					 dev, pcapf);
+    g = new DataGenerator(dctcpclient, cubicclient, laqm, dev, pcapf);
     g->moveToThread(generatorThread);
     g->startCompl();
     connect(generatorThread, SIGNAL(started()), g, SLOT(startTA()));
@@ -170,6 +169,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+	delete g;
 	ScriptRunner::instance().stop();
 }
 

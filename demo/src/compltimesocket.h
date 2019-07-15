@@ -31,6 +31,7 @@ private:
     QVector<QwtPoint3D> compl_data;
     QVector<QwtPoint3D> compl_data_hs;
     pthread_mutex_t data_mutex;
+    bool is_open;
 };
 
 #endif // COMPLTIMESOCKET_H

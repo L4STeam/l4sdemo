@@ -1,5 +1,6 @@
 #include "compltimesocket.h"
 #include <iostream>
+#include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,9 +12,7 @@
 
 #define BUFFER_SIZE 80000
 
-ComplTimeSocket::ComplTimeSocket(int port):
-    portnr(port)
-
+ComplTimeSocket::ComplTimeSocket(int port): portnr(port), is_open(false)
 {
     pthread_mutexattr_t errorcheck;
     pthread_mutexattr_init(&errorcheck);
@@ -23,8 +22,8 @@ ComplTimeSocket::ComplTimeSocket(int port):
 ComplTimeSocket::~ComplTimeSocket()
 {
      std::cerr << "closing sockets" << std::endl;
+     is_open = false;
      close(newsockfd);
-     close(sockfd);
 }
 
 void ComplTimeSocket::start()
@@ -41,19 +40,20 @@ void ComplTimeSocket::start()
     serv_addr.sin_addr.s_addr = INADDR_ANY;
     serv_addr.sin_port = htons(portnr);
 
-    // kill "Address already in use" error message
     int tr=1;
     if (setsockopt(sockfd,SOL_SOCKET,SO_REUSEADDR,&tr,sizeof(int)) == -1){
-        std::cerr << "ERROR setting sock opt" << std::endl;
+	std::stringstream ss;
+        ss << "ERROR setting sock opt on port " << portnr << std::endl;
+	perror(ss.str().c_str());
         close(sockfd);
-        start();
         return;
     }
 
     if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-        std::cerr << "ERROR on binding" << std::endl;
+	std::stringstream ss;
+        ss << "ERROR when binding on port " << portnr << std::endl;
+	perror(ss.str().c_str());
         close(sockfd);
-        start();
         return;
     }
     listen(sockfd,5);
@@ -61,13 +61,15 @@ void ComplTimeSocket::start()
     newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
     if (newsockfd < 0){
         close(newsockfd);
-        std::cerr << "ERROR on accept" << std::endl;
-        start();
+	std::stringstream ss;
+        ss << "ERROR on accept on port " << portnr << std::endl;
+	perror(ss.str().c_str());
         return;
     }
     close(sockfd);
 
-    while (newsockfd >= 0) {
+    is_open = true;
+    while (newsockfd >= 0 && is_open) {
         char buffer[BUFFER_SIZE];
         int nr_samples = 0;
         int n;
@@ -77,7 +79,8 @@ void ComplTimeSocket::start()
 
         n = read(newsockfd,&bytes_to_get,sizeof(int));
         if (n < (int)sizeof(int)) {
-            std::cerr << "ERROR reading from socket" << std::endl;
+	    if (is_open)
+                std::cerr << "ERROR reading from socket" << std::endl;
             close(newsockfd);
             break;
         }
@@ -85,7 +88,8 @@ void ComplTimeSocket::start()
         while (bytesrcv < bytes_to_get) {
             n = read(newsockfd,&buffer[bytesrcv],bytes_to_get-bytesrcv);
             if (n < 0) {
-                std::cerr << "ERROR reading from socket" << std::endl;
+	        if (is_open)
+                    std::cerr << "ERROR reading from socket" << std::endl;
                 close(newsockfd);
                 break;
             }
@@ -93,7 +97,8 @@ void ComplTimeSocket::start()
             n = 0;
         }
         if (n < 0) {
-            std::cerr << "ERROR reading from socket" << std::endl;
+	    if (is_open)
+                std::cerr << "ERROR reading from socket" << std::endl;
             close(newsockfd);
             break;
         }

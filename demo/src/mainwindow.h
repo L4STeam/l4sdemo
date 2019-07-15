@@ -7,6 +7,7 @@
 #include <QMutex>
 #include <QRadioButton>
 
+class DataGenerator;
 
 class MainWindow : public QWidget
 {
@@ -29,6 +30,7 @@ private:
     int dctcpclientCC;
     int cubicclientCC;
     QMutex dataMutex;
+    DataGenerator *g;
 };
 
 #endif // MAINWINDOW_H
