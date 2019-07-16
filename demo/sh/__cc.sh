@@ -7,6 +7,7 @@ fi
 
 cc=$1
 HERE=$(realpath $(dirname $0))
+source "${HERE}/__ssh_lib.sh"
 
 function set_tcp_cc()
 {

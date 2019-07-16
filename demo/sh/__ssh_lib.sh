@@ -5,6 +5,7 @@ function do_ssh()
 {
     local hname=$1
     shift 1
+    echo "[$hname] $@"
     ssh "$SSH_FLAGS" \
         -oControlMaster=auto \
         -oControlPath="/tmp/ssh_${hname}.sock" \
