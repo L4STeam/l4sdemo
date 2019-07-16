@@ -5,8 +5,12 @@ function do_ssh()
 {
     local hname=$1
     shift 1
-    echo "[$hname] $@"
-    ssh "$SSH_FLAGS" \
+    echo "[$hname;$SSH_FLAGS] $@"
+    cmd=ssh
+    if [ "x$SSH_FLAGS" != "x" ]; then
+        cmd="$cmd $SSH_FLAGS"
+    fi
+    $cmd \
         -oControlMaster=auto \
         -oControlPath="/tmp/ssh_${hname}.sock" \
         -oControlPersist=300s \
