@@ -2,7 +2,8 @@
 
 set -ex
 
-source $(dirname $0)/environment.sh
+HERE=$(realpath $(dirname $0))
+source "${HERE}/environment.sh"
 
 for unit in 'apt-daily.timer' 'apt-daily-upgrade.timer'; do
 	sudo systemctl disable --now $unit
@@ -25,7 +26,7 @@ sudo env DEBIAN_FRONTEND=noninteractive \
 		libxrender1 libfontconfig1 libxi6 vnc4server
 
 echo "Building and loading qdisc modules"
-./qdisc_modules_init.sh
+${HERE}/qdisc_modules_init.sh
 
 ${HERE}/iproute2-addons/build.sh
 
@@ -33,8 +34,9 @@ ${HERE}/iproute2-addons/build.sh
 echo "Installing Qt - proceed with the dialog when prompted."
 QT_VERSION=qt-linux-opensource-5.0.1-x86_64-offline.run
 QT_INSTALLER=qt-qwt/$QT_VERSION
+mkdir -p qt-qwt
 if [ ! -x $QT_INSTALLER ]; then
-	curl https://download.qt.io/archive/qt/5.0/5.0.1/$QT_VERSION -o $QT_INSTALLER
+	curl -L https://download.qt.io/archive/qt/5.0/5.0.1/$QT_VERSION -o $QT_INSTALLER
 	chmod +x $QT_INSTALLER
 fi
 if [ ! -x /home/$(whoami)/Qt5.0.1/5.0.1/gcc_64/bin/qmake ]; then
