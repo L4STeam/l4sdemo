@@ -10,7 +10,7 @@ AR=ar
 all: analyzer
 
 libta: $(SRC) $(HEADERS) Makefile
-	$(CPP) -c $(SRC) -std=c++11 -O3 -o libta.o
+	$(CPP) -c $(SRC) -std=c++11 -O3 -o libta.o -I../common
 	$(AR) rcs libta.a libta.o
 
 analyzer: main.cpp $(HEADERS) Makefile libta

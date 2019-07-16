@@ -1,11 +1,16 @@
 #include "trafficanalyzerstat.h"
 #include "demodata.h"
+#include "resources.h"
+
 #include <math.h>
+
 #define percentile(p, n) (round(float(p)/100*float(n)+float(1)/2))
 
-TrafficAnalyzerStat::TrafficAnalyzerStat(ThreadParam* param, DemoData* demodata):
-   tp(param),
-   dd(demodata)
+TrafficAnalyzerStat::TrafficAnalyzerStat(ThreadParam* param,
+					 DemoData* demodata)
+	: tp(param)
+	, dd(demodata)
+	, dl_port(std::stoi(safe_getenv("DL_PORT", "5555")))
 {
 }
 
@@ -109,7 +114,7 @@ void TrafficAnalyzerStat::getRateDropMarkStat()
 
          if (val.first.m_proto == IPPROTO_UDP)
              dd->cbrrate_ecn += (double)val.second.at(tp->sample_id).rate/8;
-         else if (val.first.m_srcport == 5555) {
+         else if (val.first.m_srcport == dl_port) {
              double rate = (double)val.second.at(tp->sample_id).rate/8;
              if (greedy_flows_ecn < 10 && rate > 0)
                 dd->ecn_th.at(greedy_flows_ecn) = rate;
@@ -126,7 +131,7 @@ void TrafficAnalyzerStat::getRateDropMarkStat()
          drops_nonecn += val.second.at(tp->sample_id).drops;
          if (val.first.m_proto == IPPROTO_UDP)
              dd->cbrrate_nonecn += val.second.at(tp->sample_id).rate/8;
-         else if (val.first.m_srcport == 5555) {
+         else if (val.first.m_srcport == dl_port) {
              double rate = (double)val.second.at(tp->sample_id).rate/8;
              if (greedy_flows_nonecn < 10 && rate > 0)
                 dd->nonecn_th.at(greedy_flows_nonecn) = rate;

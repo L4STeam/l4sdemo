@@ -25,7 +25,7 @@
 
 typedef u_int32_t u32; // we use "kernel-style" u32 variables in numbers.h
 #define TESTBED_ANALYZER 1
-#include "../common/numbers.h"
+#include "numbers.h"
 
 #define NSEC_PER_SEC 1000000000UL
 #define NSEC_PER_MS 1000000UL

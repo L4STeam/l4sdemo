@@ -21,6 +21,7 @@ private:
 
     ThreadParam* tp;
     DemoData* dd;
+    int dl_port;
 };
 
 #endif // TRAFFICANALYZERSTAT_H
