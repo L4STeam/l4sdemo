@@ -13,6 +13,6 @@ do_ssh ${SERVER} 'killall iperf' &> /dev/null
 do_ssh ${CLIENT} 'killall iperf' &> /dev/null
 if [[ "$rate" > 0 ]]; then
     SSH_FLAGS="-f"
-    do_ssh ${CLIENT}  "iperf -Ds"
+    do_ssh ${CLIENT}  "iperf -uDs"
     do_ssh ${SERVER}  "iperf -c ${CLIENT} -u -t 0 -b ${rate}m" &
 fi
