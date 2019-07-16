@@ -2,5 +2,5 @@
 HERE=$(realpath $(dirname $0))
 SERVER=$SERVER_A
 CLIENT=$CLIENT_A 
-source "{HERE}/__cbr.sh" "$@"
+source "${HERE}/__cbr.sh" "$@"
 

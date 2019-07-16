@@ -21,5 +21,5 @@ function do_ssh()
 function clean_ssh()
 {
     local hname=$1
-    ssh -S "/tmp/ssh_${hname}.sock" -O exit $hanme || true
+    ssh -S "/tmp/ssh_${hname}.sock" -O exit $hname || true
 }

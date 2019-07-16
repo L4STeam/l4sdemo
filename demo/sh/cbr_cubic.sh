@@ -3,4 +3,4 @@
 HERE=$(realpath $(dirname $0))
 SERVER=$SERVER_B 
 CLIENT=$CLIENT_B 
-source "{HERE}/__cbr.sh" "$@"
+source "${HERE}/__cbr.sh" "$@"
