@@ -17,6 +17,7 @@ class ComplTimeSocket : public QObject
     Q_OBJECT
 public:
     explicit ComplTimeSocket(int port);
+    ComplTimeSocket(std::string port) : ComplTimeSocket(std::stoi(port)) {}
     ~ComplTimeSocket();
 
 public slots:

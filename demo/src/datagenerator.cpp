@@ -68,13 +68,13 @@ void DataGenerator::updateTA(bool ipc)
 void DataGenerator::startCompl()
 {
     complLLThread = new QThread();
-    m_compl_ll = new ComplTimeSocket(11000);
+    m_compl_ll = new ComplTimeSocket(safe_getenv("PORT_A", "11000"));
     m_compl_ll->moveToThread(complLLThread);
     connect(complLLThread, SIGNAL(started()), m_compl_ll, SLOT(start()));
     complLLThread->start();
 
     complCThread = new QThread();
-    m_compl_c = new ComplTimeSocket(11001);
+    m_compl_c = new ComplTimeSocket(safe_getenv("PORT_B", "11001"));
     m_compl_c->moveToThread(complCThread);
     connect(complCThread, SIGNAL(started()), m_compl_c, SLOT(start()));
     complCThread->start();
