@@ -12,5 +12,5 @@ declare -i rate=$1
 do_ssh ${SERVER} 'killall iperf'
 if [[ "$rate" > 0 ]]; then
     SSH_FLAGS="-f"
-    do_ssh ${SERVER}  "iperf -c ${CLIENT} -u -t 0 -b ${rate}m"
+    do_ssh ${SERVER}  "iperf -c ${CLIENT} -u -t 0 -b ${rate}m" &
 fi
