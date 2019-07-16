@@ -57,6 +57,7 @@ exists(/usr/local/qwt-6.1.4) {
 }
 
 INCLUDEPATH += ../traffic_analyzer
+INCLUDEPATH += ../common
 LIBS += -L../traffic_analyzer -lta -lpcap
 
 @QMAKE_STRIP=
