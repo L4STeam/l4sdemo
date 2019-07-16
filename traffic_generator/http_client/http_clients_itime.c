@@ -124,7 +124,7 @@ void transfer_compl_data (){
 
 	int nr_samples = 0;
 	struct timeval start_time,end_time,diff_time;
-    while (sockfd) {
+    do {
          gettimeofday(&start_time, NULL);
          pthread_mutex_lock(&tp.data_mutex);
         if (tp.cur_index > 0){
@@ -143,7 +143,7 @@ void transfer_compl_data (){
 
             pthread_mutex_unlock(&tp.data_mutex);
 
- 	    int buf_index = 0;
+	    int buf_index = 0;
 	    int bytes_per_chunk =  sizeof(double)*nr_samples;
 	    memcpy(&sendbuf[buf_index],tp.size_send, bytes_per_chunk);
 	    buf_index += bytes_per_chunk;
@@ -158,7 +158,7 @@ void transfer_compl_data (){
 		  n = write(sockfd,&sendbuf[bytes_sent], buf_index-bytes_sent);
 		  if (n < 0) {
 			error("ERROR writing to socket (completion data transfer)");
-               		pthread_exit(0);
+			pthread_exit(0);
 		   }
 
 		  bytes_sent += n;
@@ -176,7 +176,7 @@ void transfer_compl_data (){
         if (diff_us < 1000000)
             usleep(1000000-diff_us);
 
-    }
+    } while (n >= 0);
 }
 
 /* This method reads the values of a Pareto distribution sample file
