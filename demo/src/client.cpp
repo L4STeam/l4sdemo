@@ -294,6 +294,7 @@ Client::Client(QWidget *parent, const char* download_path,
     connect(ccSelect, SIGNAL(currentIndexChanged(int)), this, SLOT(updateCC(int)));
 
     ccSelect->setCurrentIndex(init_cc);
+    _setCC(ccValues.at(init_cc));
 }
 
 void Client::cleanup() const

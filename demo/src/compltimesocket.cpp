@@ -62,8 +62,11 @@ void ComplTimeSocket::start()
 
     is_open = true;
 accept:
-    if (!is_open)
+    if (!is_open) {
+	    if (sockfd > 0)
+		    close(sockfd);
 	    return;
+    }
     newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
     if (newsockfd < 0){
         close(newsockfd);
@@ -72,7 +75,6 @@ accept:
 	perror(ss.str().c_str());
         return;
     }
-    close(sockfd);
 
     while (newsockfd >= 0 && is_open) {
         char buffer[BUFFER_SIZE];
@@ -112,6 +114,7 @@ accept:
         }
         pthread_mutex_unlock(&data_mutex);
      }
+    close(sockfd);
 }
 
 void ComplTimeSocket::getData(QVector<QwtPoint3D> *data, QVector<QwtPoint3D> *data_hs)

@@ -63,7 +63,7 @@ void ScriptRunner::run_loop()
 		std::unique_lock<std::mutex> lock(q_mutex);
 		while (q.empty()) {
 			q_cond.wait(lock);
-			if (!alive)
+			if (!alive && q.empty())
 				return;
 		}
 		std::string script = q.front();
