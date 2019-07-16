@@ -21,6 +21,7 @@ for qdisc in *.c; do
 done
 
 cat "${HERE}/../kernel_modules/sch_dualpi2/compat-pkt_sched.h" >> "${DEST}/include/uapi/linux/pkt_sched.h"
+"{HERE}/patch_fq_codel.sh"
 
 pushd "${DEST}"
 ./configure

@@ -77,11 +77,11 @@ elif [[ $aqm == "pie_5" ]]; then
 elif [[ $aqm == "pie_1" ]]; then
         set_aqm pie "target 1ms ecn"  
 elif [[ $aqm == "fqcodel" ]]; then
-        set_aqm fq_codel "ecn"  
+        set_aqm fq_codel_tst "ecn"  
 elif [[ $aqm == "fqcodel_ce1" ]]; then
-        set_aqm fq_codel "ecn ce_threshold 1ms"  
+        set_aqm fq_codel_tst "ecn ce_threshold 1ms"  
 elif [[ $aqm == "fqcodel_ce2" ]]; then
-        set_aqm fq_codel "ecn ce_threshold 2ms"  
+        set_aqm fq_codel_tst "ecn ce_threshold 2ms"  
 elif [[ $aqm == "red" ]]; then
         set_aqm red "limit 1600000 min 120000 max 360000 avpkt 1000 burst 220 ecn bandwidth ${link}Mbit"  
 fi

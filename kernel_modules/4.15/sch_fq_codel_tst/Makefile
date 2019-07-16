@@ -1,5 +1,5 @@
-TARGET := sch_fq_codel
-QDISC  := sch_fq_codel
+TARGET := sch_fq_codel_tst
+QDISC  := sch_fq_codel_tst
 
 obj-m += $(TARGET).o
 all:
