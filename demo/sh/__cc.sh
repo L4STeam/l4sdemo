@@ -8,7 +8,7 @@ fi
 cc=$1
 HERE=$(realpath $(dirname $0))
 
-function set_tc_cc()
+function set_tcp_cc()
 {
     ip=$1
     tcp_cc=$2

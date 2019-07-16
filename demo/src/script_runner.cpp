@@ -74,9 +74,11 @@ void ScriptRunner::run_loop()
 
 void ScriptRunner::exec_script(std::string &path)
 {
+	int rc;
+
 	std::cerr
 		<< "-- " << (fake ? "Faking " : "")
 		<< "Running [" << path << "]" << std::endl;
-	if (!fake && std::system(path.c_str()))
-	    std::cerr << "Non-zero for " << path << std::endl;
+	if (!fake && (rc = std::system(path.c_str())))
+	    std::cerr << "Non-zero exit (" << rc << ") for " << path << std::endl;
 }
