@@ -169,6 +169,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+	_RUN_SCRIPT(res_path("/sh/kill_ssh.sh"));
 	delete g;
 	ScriptRunner::instance().stop();
 }
