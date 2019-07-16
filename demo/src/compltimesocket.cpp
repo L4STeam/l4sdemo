@@ -59,6 +59,11 @@ void ComplTimeSocket::start()
     }
     listen(sockfd,5);
     clilen = sizeof(cli_addr);
+
+    is_open = true;
+accept:
+    if (!is_open)
+	    return;
     newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
     if (newsockfd < 0){
         close(newsockfd);
@@ -69,41 +74,32 @@ void ComplTimeSocket::start()
     }
     close(sockfd);
 
-    is_open = true;
     while (newsockfd >= 0 && is_open) {
         char buffer[BUFFER_SIZE];
         int nr_samples = 0;
         int n;
         int bytes_to_get = 0;
         int bytesrcv = 0;
-        std::cout << "reading completion data" << std::endl;
 
         n = read(newsockfd,&bytes_to_get,sizeof(int));
         if (n < (int)sizeof(int)) {
-	    if (is_open)
-                std::cerr << "ERROR reading from socket" << std::endl;
             close(newsockfd);
-            break;
+            goto accept;
         }
         n = 0;
         while (bytesrcv < bytes_to_get) {
             n = read(newsockfd,&buffer[bytesrcv],bytes_to_get-bytesrcv);
             if (n < 0) {
-	        if (is_open)
-                    std::cerr << "ERROR reading from socket" << std::endl;
                 close(newsockfd);
-                break;
+                goto accept;
             }
             bytesrcv += n;
             n = 0;
         }
         if (n < 0) {
-	    if (is_open)
-                std::cerr << "ERROR reading from socket" << std::endl;
             close(newsockfd);
-            break;
+            goto accept;
         }
-        std::cout << "bytes received: " << bytesrcv << std::endl;
         nr_samples = bytesrcv/3/sizeof(double);
         double* dataptr = (double*)buffer;
         pthread_mutex_lock(&data_mutex);
@@ -116,7 +112,6 @@ void ComplTimeSocket::start()
         }
         pthread_mutex_unlock(&data_mutex);
      }
-     start();
 }
 
 void ComplTimeSocket::getData(QVector<QwtPoint3D> *data, QVector<QwtPoint3D> *data_hs)
