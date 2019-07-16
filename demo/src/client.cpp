@@ -94,7 +94,6 @@ Client::Client(QWidget *parent, const char* download_path,
     readCBRList();
     readCCList();
     _RUN_SCRIPT(ssh_killall);
-    updateWebBrowsing0(true);
 
     QVBoxLayout *mainLayout = new QVBoxLayout;
     setLayout(mainLayout);
@@ -567,14 +566,15 @@ void Client::updateLinkCap(int value)
     linkcap = value;
 }
 
+void Client::_setCC(std::string name)
+{
+    _RUN_SCRIPT(ssh_cc + " " + name);
+    ccChanged(name);
+}
+
 void Client::updateCC(int value)
 {
-    std::stringstream command;
-    _RUN_SCRIPT(ssh_killall);
-    command << ssh_cc << " " << ccValues.at(value);
-    _RUN_SCRIPT(command.str());
-
-    ccChanged(value);
+    _setCC(ccValues.at(value));
     startDownloads();
     if (btnwb10->isChecked()) {
         std::stringstream command;

@@ -19,16 +19,16 @@ public:
 signals:
     void updateTA(bool ipc);
 public slots:
-    void updateDctcpclientCC(int value);
-    void updateCubicclientCC(int value);
+    void updateDctcpclientCC(std::string);
+    void updateCubicclientCC(std::string);
     void checkCC();
 
 private:
     int checkIfUp(const char* ip);
     QRadioButton* becn;
     QRadioButton* bip;
-    int dctcpclientCC;
-    int cubicclientCC;
+    std::string dctcpclientCC;
+    std::string cubicclientCC;
     QMutex dataMutex;
     DataGenerator *g;
 };

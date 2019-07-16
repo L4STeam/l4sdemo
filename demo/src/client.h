@@ -34,7 +34,7 @@ public:
 
 signals:
     void scheduleReplot();
-    int ccChanged(int);
+    int ccChanged(std::string name);
     int rttChanged(int);
 
 public slots:
@@ -61,6 +61,7 @@ private slots:
 
 
 private:
+    void _setCC(const std::string name);
     void readRTTList();
     void readCBRList();
     void readCCList();

@@ -17,10 +17,7 @@
 #include <sstream>
 #include <cstdlib>
 
-MainWindow::MainWindow(QWidget *parent)
-    : QWidget(parent)
-    , dctcpclientCC(0)
-    , cubicclientCC(1)
+MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
 {
     QHBoxLayout *mainLayout = new QHBoxLayout;
     setLayout(mainLayout);
@@ -172,23 +169,26 @@ MainWindow::~MainWindow()
 	ScriptRunner::instance().stop();
 }
 
-void MainWindow::updateDctcpclientCC(int value)
+void MainWindow::updateDctcpclientCC(std::string name)
 {
     QMutexLocker m(&dataMutex);
-    dctcpclientCC = value;
+    dctcpclientCC = name;
     /* checkCC(); */
 }
 
-void MainWindow::updateCubicclientCC(int value)
+void MainWindow::updateCubicclientCC(std::string name)
 {
     QMutexLocker m(&dataMutex);
-    cubicclientCC = value;
+    cubicclientCC = name;
     /* checkCC(); */
 }
 
 void MainWindow::checkCC()
 {
-    if ((dctcpclientCC == 0 || dctcpclientCC == 2 )&& (cubicclientCC == 1 || cubicclientCC == 3)) {
+    if ((dctcpclientCC == "dctcp" || dctcpclientCC == "cubic_ecn" ||
+	 dctcpclientCC == "prague") &&
+	(cubicclientCC == "cubic" || cubicclientCC == "reno" ||
+	 cubicclientCC == "bbr")) {
         if (!becn->isChecked())
             becn->toggle();
         std::cout << "set checked ECN" << std::endl;
@@ -196,7 +196,6 @@ void MainWindow::checkCC()
         if (!bip->isChecked())
             bip->toggle();
         std::cout << "set checked IP" << std::endl;
-
     }
 }
 
