@@ -26,11 +26,10 @@ class Client : public QGroupBox
     Q_OBJECT
 public:
     explicit Client(QWidget *parent, const char* download_path,
-		    const char* killall_path, const char* killdownload_path,
-                    const char* wb_path, const char* rtt_path,
-		    const char* cc_path, const char* al_path,
-		    const char* cbr_path, const QColor &color = Qt::blue,
-		    int init_cc=0);
+		    const char* killall_path, const char* wb_path,
+		    const char* rtt_path, const char* cc_path,
+		    const char* al_path, const char* cbr_path,
+		    const QColor &color = Qt::blue, int init_cc=0);
     ~Client();
 
 signals:
@@ -68,6 +67,7 @@ private:
     void updateComplHS(bool value);
     int getCBRRate(int value);
     int getLinkCap();
+    void cleanup() const;
 
 
     int linkcap;
@@ -108,7 +108,6 @@ private:
     std::string m_serverip;
     std::string m_clientip;
     std::string ssh_killall;
-    std::string ssh_killdownload;
     std::string ssh_download;
     std::string ssh_wb;
     std::string ssh_rtt;

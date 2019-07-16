@@ -57,10 +57,9 @@ private:
 };
 
 Client::Client(QWidget *parent, const char* download_path,
-	       const char* killall_path, const char* killdownload_path,
-               const char* wb_path, const char* rtt_path, const char* cc_path,
-               const char* al_path, const char* cbr_path, const QColor& color,
-	       int init_cc)
+	       const char* killall_path, const char* wb_path,
+	       const char* rtt_path, const char* cc_path, const char* al_path,
+	       const char* cbr_path, const QColor& color, int init_cc)
     : QGroupBox(parent)
     , linkcap(40)
     , displayNumDownloads(0)
@@ -71,7 +70,6 @@ Client::Client(QWidget *parent, const char* download_path,
     , nrFlows(0)
     , rate(0.0)
     , ssh_killall(killall_path)
-    , ssh_killdownload(killdownload_path)
     , ssh_download(download_path)
     , ssh_wb(wb_path)
     , ssh_rtt(rtt_path)
@@ -299,11 +297,14 @@ Client::Client(QWidget *parent, const char* download_path,
     ccSelect->setCurrentIndex(init_cc);
 }
 
-Client::~Client()
+void Client::cleanup() const
 {
     _RUN_SCRIPT(ssh_killall);
-    _RUN_SCRIPT(ssh_killdownload);
-    _RUN_SCRIPT(ssh_wb + " 0");
+}
+
+Client::~Client()
+{
+	cleanup();
 }
 
 void Client::updateNumDownloads(int num)
@@ -316,7 +317,6 @@ void Client::startDownloads()
 {
     std::stringstream command;
     command << ssh_download << " " <<  nrFlows;
-    _RUN_SCRIPT(ssh_killdownload);
     _RUN_SCRIPT(command.str());
 }
 

@@ -50,9 +50,8 @@ MainWindow::MainWindow(QWidget *parent)
 	    << "] <> $SERVER_B [" << server_b << "]";
 
     Client *dctcpclient = new Client(this,
-		    res_path("/sh/start_dctcp_download.sh").c_str(),
+		    res_path("/sh/dctcp_download.sh").c_str(),
 		    res_path("/sh/killall_dctcp.sh").c_str(),
-		    res_path("/sh/killdownload_dctcp.sh").c_str(),
 		    res_path("/sh/wb_dctcp.sh ").c_str(),
 		    res_path("/sh/rtt_dctcp.sh").c_str(),
 		    res_path("/sh/cc_dctcp.sh").c_str(),
@@ -63,9 +62,8 @@ MainWindow::MainWindow(QWidget *parent)
     firstColumn->addWidget(dctcpclient);
     firstColumn->setAlignment(dctcpclient, Qt::AlignTop);
     Client *cubicclient = new Client(this,
-		    res_path("/sh/start_cubic_download.sh").c_str(),
+		    res_path("/sh/cubic_download.sh").c_str(),
 		    res_path("/sh/killall_cubic.sh").c_str(),
-		    res_path("/sh/killdownload_cubic.sh").c_str(),
 		    res_path("/sh/wb_cubic.sh ").c_str(),
 		    res_path("/sh/rtt_cubic.sh").c_str(),
 		    res_path("/sh/cc_cubic.sh").c_str(),
