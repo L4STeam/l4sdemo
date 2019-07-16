@@ -1,4 +1,4 @@
 #!/bin/bash
 
 HERE=$(realpath $(dirname $0))
-SERVER=$SERVER_B CLIENT=$CLIENT_B "${HERE}/__cc.sh" "$@"
+env SERVER=$SERVER_B CLIENT=$CLIENT_B "${HERE}/__cc.sh" "$@"

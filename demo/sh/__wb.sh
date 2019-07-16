@@ -17,4 +17,3 @@ if [[ "$mit_r" > 0 ]]; then
     do_ssh $SERVER "${TGEN}/http_server/run_httpserver 10002 ${TGEN}/gen_rsample/rs${SAMPLE_SUFFIX}.txt"
     do_ssh $CLIENT "${TGEN}/http_client/http_clients_itime ${SERVER} 10002 ${TGEN}/gen_ritime/rit${mit_r}_${SAMPLE_SUFFIX}.txt $link ${AQMNODE} ${PORT}"
 fi
-
