@@ -1,4 +1,6 @@
 #!/bin/bash
 
 HERE=$(realpath $(dirname $0))
-env SERVER="$SERVER_B" CLIENT="$CLIENT_B" "${HERE}/__download.sh" "$@"
+SERVER="$SERVER_B"
+CLIENT="$CLIENT_B" 
+source "${HERE}/__download.sh" "$@"
