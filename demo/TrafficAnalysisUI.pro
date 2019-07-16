@@ -61,7 +61,7 @@ INCLUDEPATH += ../common
 LIBS += -L../traffic_analyzer -lta -lpcap
 
 @QMAKE_STRIP=
-#QMAKE_POST_LINK += sh/setcap.sh
+QMAKE_POST_LINK += sh/setcap.sh
 QMAKE_LFLAGS += -rdynamic
 
 DISTFILES += \
