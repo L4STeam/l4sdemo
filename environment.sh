@@ -14,6 +14,9 @@ export CLIENT_B="192.168.200.116"
 # The interface on both clients connected to the aqm/router (to apply mixed rtt)
 export CLIENT_A_IFACE="eth0"
 export CLIENT_B_IFACE="eth0"
+# Server interfaces that might need to be tuned (e.g., offload, ...)
+export SERVER_A_IFACE="eth0"
+export SERVER_B_IFACE="eth0"
 # Ports used to send web request completion times to the AQM node
 export PORT_A=11000
 export PORT_B=11001

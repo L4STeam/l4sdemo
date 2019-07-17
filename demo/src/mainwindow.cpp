@@ -160,6 +160,7 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
     connect(bip, SIGNAL(toggled(bool)), g, SLOT(setIPClass(bool)));
 
     generatorThread->start();
+    _RUN_SCRIPT(res_path("/sh/prepare_endhosts.sh"));
 }
 
 MainWindow::~MainWindow()

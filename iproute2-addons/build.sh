@@ -12,15 +12,14 @@ git clone \
     -b $(uname -r | awk -F '.' '{ printf "v%d.%d.0", $1, $2 }') \
     git://git.kernel.org/pub/scm/network/iproute2/iproute2.git "$DEST"
     for qdisc in *.c; do
-        cp "$qdisc" "${TCDIR}"
         sed -i "/^TCMODULES :=/a TCMODULES += ${qdisc/%.c/.o}" "${TCDIR}/Makefile"
     done
+    echo "#include \"${HERE}/../kernel_modules/sch_dualpi2/compat-pkt_sched.h\"" >> "${DEST}/include/uapi/linux/pkt_sched.h"
 fi
 for qdisc in *.c; do
     cp "$qdisc" "${TCDIR}"
 done
 
-cat "${HERE}/../kernel_modules/sch_dualpi2/compat-pkt_sched.h" >> "${DEST}/include/uapi/linux/pkt_sched.h"
 "{HERE}/patch_fq_codel.sh"
 
 pushd "${DEST}"

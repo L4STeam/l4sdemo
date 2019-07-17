@@ -55,7 +55,7 @@ set_aqm() {
 if [[ $aqm == "dpi2" ]]; then
 		set_aqm dualpi2 ""  
 elif [[ $aqm == "dpi2_dc" ]]; then
-        set_aqm dualpi2 "dc_dualq dc_ecn"  
+        set_aqm dualpi2 "any_ect"  
 elif [[ $aqm == "td_10" ]]; then
         set_taildrop 10  
 elif [[ $aqm == "td_20" ]]; then

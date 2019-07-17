@@ -35,30 +35,54 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <math.h>
+#include <errno.h>
 
 #include "utils.h"
 #include "tc_util.h"
 
+#define MAX_PROB ((uint32_t)(~((uint32_t)0)))
+#define DEFAULT_ALPHA_BETA ((uint32_t)(~((uint32_t)0)))
+#define ALPHA_BETA_MAX 40000 /* Avoid overflows when computing PI2 probability*/
+#define ALPHA_BETA_MIN 0
+#define ALPHA_BETA_SCALE (1 << 8)
+#define ALPHA_BETA_MIN_ENABLED ((float)1.0 / ALPHA_BETA_SCALE)
+
+
 enum {
 	INET_ECN_NOT_ECT = 0,
 	INET_ECN_ECT_1 = 1,
+	INET_ECN_ECT_0 = 2,
 	INET_ECN_CE = 3,
 	INET_ECN_MASK = 3,
 };
 
-static void explain(void)
+static const char *get_ecn_type(uint8_t ect)
 {
-	fprintf(stderr, "Usage: ... dualpi2 [limit PACKETS] [target TIME] [tupdate TIME]\n");
-	fprintf(stderr, "               [alpha ALPHA] [beta BETA]\n");
-	fprintf(stderr, "               [no_dualq|l4s_dualq|dc_dualq] [k KFACTOR]\n");
-	fprintf(stderr, "               [no_ecn|classic_ecn|l4s_ecn|dc_ecn]\n");
-	fprintf(stderr, "               [et_packets|et_time] [l_thresh TIME | PACKETS]\n");
-	fprintf(stderr, "		[c_limit | l_drop PROBABILITY %%]\n");
-	fprintf(stderr, "               [drop_enqueue|drop_dequeue]\n");
-	fprintf(stderr, "               [wrr_ratio PACKETS]\n");
+	switch (ect & INET_ECN_MASK) {
+		case INET_ECN_ECT_1: return "l4s_ect";
+		case INET_ECN_ECT_0:
+		case INET_ECN_MASK: return "any_ect";
+		default:
+			fprintf(stderr,
+				"Warning: Unexpected ecn type %u!\n", ect);
+			return "";
+	}
 }
 
-static int get_float(float *val, const char *arg)
+static void explain(void)
+{
+	fprintf(stderr, "Usage: ... dualpi2\n");
+	fprintf(stderr, "               [limit PACKETS]\n");
+	fprintf(stderr, "               [coupling_factor NUMBER]\n");
+	fprintf(stderr, "               [target TIME] [tupdate TIME]\n");
+	fprintf(stderr, "               [alpha ALPHA] [beta BETA]\n");
+	fprintf(stderr, "               [step_thresh TIME|PACKETS]\n");
+	fprintf(stderr, "               [drop_on_overload|overflow]\n");
+	fprintf(stderr, "               [drop_enqueue|drop_dequeue]\n");
+	fprintf(stderr, "               [classic_protection PERCENTAGE]\n");
+}
+
+static int get_float_in_range(float *val, const char *arg, float min, float max)
 {
         float res;
         char *ptr;
@@ -68,19 +92,72 @@ static int get_float(float *val, const char *arg)
         res = strtof(arg, &ptr);
         if (!ptr || ptr == arg || *ptr)
                 return -1;
+	if (res < min || res > max)
+		return -1;
         *val = res;
         return 0;
 }
 
-#define DEFAULT_ALPHA_BETA 0xffffffff
-#define ALPHA_BETA_MAX 40000
-#define ALPHA_BETA_MIN_ENABLED 0.00390625
-#define ALPHA_BETA_MIN 0
-#define K_MAX 8
-#define K_MIN 1
-#define P_MAX 100
-#define P_MIN 0
-#define T_SPEED_MAX 31
+static int get_packets(uint32_t *val, const char *arg)
+{
+	unsigned long res;
+	char *ptr;
+
+	if (!arg || !*arg)
+		return -1;
+	res = strtoul(arg, &ptr, 10);
+	if (!ptr || ptr == arg ||
+	    (strcmp(ptr, "pkt") && strcmp(ptr, "packet") &&
+	     strcmp(ptr, "packets")))
+		return -1;
+	if (res == ULONG_MAX && errno == ERANGE)
+		return -1;
+	if (res > 0xFFFFFFFFUL)
+		return -1;
+	*val = res;
+	return 0;
+}
+
+static int parse_alpha_beta(int argc, char **argv, uint32_t *field)
+{
+
+	float field_f;
+	char *name = *argv;
+
+	NEXT_ARG();
+	if (get_float_in_range(&field_f, *argv, ALPHA_BETA_MIN,
+			       ALPHA_BETA_MAX)) {
+		fprintf(stderr, "Illegal \"%s\"\n", name);
+		return -1;
+	}
+	else if (field_f < ALPHA_BETA_MIN_ENABLED)
+		fprintf(stderr,
+			"Warning: \"%s\" is too small and "
+			"will be rounded to zero. Integral "
+			"controller will be disabled\n", name);
+	*field = (uint32_t)(field_f * ALPHA_BETA_SCALE);
+	return 0;
+}
+
+static int try_get_percentage(int *val, const char *arg, int base)
+{
+	long res;
+	char *ptr;
+
+	if (!arg || !*arg)
+		return -1;
+	res = strtol(arg, &ptr, base);
+	if (!ptr || ptr == arg || (*ptr && strcmp(ptr, "%")))
+		return -1;
+	if (res == ULONG_MAX && errno == ERANGE)
+		return -1;
+	if (res < 0 || res > 100)
+		return -1;
+
+	*val = res;
+	return 0;
+}
+
 
 /* iproute2 v4.15 changed the API in commit b317557f5854bb8 / tag v4.15
  * Conveniently, the CBS scheduler got introduced in Linux in commit
@@ -95,29 +172,24 @@ static int dualpi2_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 			 struct nlmsghdr *n)
 #endif
 {
-	unsigned int limit   = 0;
-	unsigned int target  = 0;
-	unsigned int tupdate = 0;
-	unsigned int alpha   = DEFAULT_ALPHA_BETA;
-	float alpha_f = 0;
-	unsigned int beta    = DEFAULT_ALPHA_BETA;
-	float beta_f = 0;
-	unsigned int kfactor = 0;
-	unsigned int et_packets = 0;
-	unsigned int et_time = 0;
-	unsigned int l_thresh = 0;
-	unsigned int c_limit = 0;
-	unsigned int l_drop = 0;
-	unsigned int wrr_ratio = 0;
-	int queue_mask = -1;
-	int ecn = -1;
+	uint32_t limit = 0;
+	uint32_t target = 0;
+	uint32_t tupdate = 0;
+	uint32_t alpha = DEFAULT_ALPHA_BETA;
+	uint32_t beta = DEFAULT_ALPHA_BETA;
+	int32_t coupling_factor = -1;
+	uint8_t ecn_mask = INET_ECN_NOT_ECT;
+	bool step_packets = false;
+	uint32_t step_thresh = 0;
+	int c_protection = -1;
 	int drop_early = -1;
+	int drop_overload = -1;
 	struct rtattr *tail;
 
 	while (argc > 0) {
 		if (strcmp(*argv, "limit") == 0) {
 			NEXT_ARG();
-			if (get_unsigned(&limit, *argv, 0)) {
+			if (get_u32(&limit, *argv, 10)) {
 				fprintf(stderr, "Illegal \"limit\"\n");
 				return -1;
 			}
@@ -133,82 +205,51 @@ static int dualpi2_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 				fprintf(stderr, "Illegal \"tupdate\"\n");
 				return -1;
 			}
-		} else if (strcmp(*argv, "alpha") == 0) {
+		} else if (strcmp(*argv, "alpha") == 0 &&
+			   parse_alpha_beta(argc, argv, &alpha))
+				return -1;
+		else if (strcmp(*argv, "beta") == 0 &&
+			   parse_alpha_beta(argc, argv, &beta))
+				return -1;
+		else if (strcmp(*argv, "coupling_factor") == 0) {
 			NEXT_ARG();
-			if (get_float(&alpha_f, *argv) ||
-			    (alpha_f > ALPHA_BETA_MAX) || (alpha_f < ALPHA_BETA_MIN)) {
-				fprintf(stderr, "Illegal \"alpha\"\n");
+			if (get_s32(&coupling_factor, *argv, 0) ||
+			    coupling_factor > 0xFFUL ||coupling_factor < 0) {
+				fprintf(stderr,
+					"Illegal \"coupling_factor\"\n");
 				return -1;
 			}
-			if (alpha_f == 0) {
-				fprintf(stderr, "Warning: \"alpha\" is zero. Integral controller will be disabled.\n");
-			}
-			else if (alpha_f < ALPHA_BETA_MIN_ENABLED) {
-                                fprintf(stderr, "Warning: \"alpha\" is too small and will be rounded to zero. Integral controller will be disabled\n");
-                        }
-			alpha = (unsigned int)(alpha_f * 256);
-		} else if (strcmp(*argv, "beta") == 0) {
+		} else if (strcmp(*argv, "l4s_ect") == 0)
+			ecn_mask = INET_ECN_ECT_1;
+		else if (strcmp(*argv, "any_ect") == 0)
+			ecn_mask = INET_ECN_MASK;
+		else if (strcmp(*argv, "step_thresh") == 0) {
 			NEXT_ARG();
-			if (get_float(&beta_f, *argv) ||
-			    (beta_f > ALPHA_BETA_MAX) || (beta_f < ALPHA_BETA_MIN)) {
-				fprintf(stderr, "Illegal \"beta\"\n");
-				return -1;
+			/* First assume that this is specified in time */
+			if (get_time(&step_thresh, *argv)) {
+				/* Then packets */
+				if (get_packets(&step_thresh, *argv)) {
+					fprintf(stderr,
+						"Illegal \"step_thresh\"\n");
+					return -1;
+				}
+				step_packets = true;
 			}
-			if (beta_f == 0) {
-                                fprintf(stderr, "Warning: \"beta\" is zero. Proportional controller will be disabled.\n");
-			}
-			else if (beta_f < ALPHA_BETA_MIN_ENABLED) {
-                                fprintf(stderr, "Warning: \"beta\" is too small and will be rounded to zero. Proportional controller will be disabled.\n");
-                        }
-			beta = (unsigned int)(beta_f * 256);
-		} else if (strcmp(*argv, "k") == 0) {
-			NEXT_ARG();
-			if (get_unsigned(&kfactor, *argv, 0) ||
-			    (kfactor > K_MAX) || (kfactor < K_MIN)) {
-				fprintf(stderr, "Illegal \"k\"\n");
-				return -1;
-			}
-		} else if (strcmp(*argv, "no_dualq") == 0) {
-			queue_mask = INET_ECN_NOT_ECT;
-		} else if (strcmp(*argv, "l4s_dualq") == 0) {
-			queue_mask = INET_ECN_ECT_1;
-		} else if (strcmp(*argv, "dc_dualq") == 0) {
-			queue_mask = INET_ECN_CE;
-		} else if (strcmp(*argv, "no_ecn") == 0) {
-			ecn = INET_ECN_NOT_ECT;
-		} else if (strcmp(*argv, "classic_ecn") == 0) {
-			ecn = (INET_ECN_MASK << 2) | INET_ECN_NOT_ECT;
-		} else if (strcmp(*argv, "l4s_ecn") == 0) {
-			ecn = (INET_ECN_MASK << 2) | INET_ECN_ECT_1;
-		} else if (strcmp(*argv, "dc_ecn") == 0) {
-			ecn = (INET_ECN_MASK << 2) | INET_ECN_CE;
-		} else if (strcmp(*argv, "et_packets") == 0) {
-                        et_packets = 1;
-                } else if (strcmp(*argv, "et_time") == 0) {
-                        et_time = 1;
-		} else if (strcmp(*argv, "l_thresh") == 0) {
-			NEXT_ARG();
-			if (get_time(&l_thresh, *argv)) {
-				fprintf(stderr, "Illegal \"l_thresh\"\n");
-				return -1;
-			}
-		} else if (strcmp(*argv, "l_drop") == 0) {
-			NEXT_ARG();
-			if (get_unsigned(&l_drop, *argv, 0) ||
-			    (l_drop > P_MAX) || (l_drop < P_MIN)) {
-				fprintf(stderr, "Illegal \"l_drop\"\n");
-				return -1;
-			}
-		} else if (strcmp(*argv, "c_limit") == 0) {
-                        c_limit = 1;
+		} else if (strcmp(*argv, "overflow") == 0) {
+                        drop_overload = 0;
+		} else if (strcmp(*argv, "drop_on_overload") == 0) {
+                        drop_overload = 1;
 		} else if (strcmp(*argv, "drop_enqueue") == 0) {
 			drop_early = 1;
 		} else if (strcmp(*argv, "drop_dequeue") == 0) {
 			drop_early = 0;
-		} else if (strcmp(*argv, "wrr_ratio") == 0) {
+		} else if (strcmp(*argv, "classic_protection") == 0) {
                         NEXT_ARG();
-                        if (get_unsigned(&wrr_ratio, *argv, 0)) {
-                                fprintf(stderr, "Illegal \"wrr_ratio\"\n");
+                        if (try_get_percentage(&c_protection, *argv, 10) ||
+			    c_protection > 100 ||
+			    c_protection < 0) {
+                                fprintf(stderr,
+					"Illegal \"classic_protection\"\n");
                                 return -1;
                         }
 		} else if (strcmp(*argv, "help") == 0) {
@@ -219,52 +260,36 @@ static int dualpi2_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 			explain();
 			return -1;
 		}
-		argc--;
-		argv++;
+		--argc;
+		++argv;
 	}
-
-	if (c_limit && l_drop) {
-		fprintf(stderr, "c_limit cannot be used with l_drop, use either c_limit or l_drop (refer to README)");
-                explain();
-                return -1;
-	}
-
-	if (et_packets && et_time) {
-                fprintf(stderr, "et_packets cannot be used with et_time, use either et_packets or et_time (refer to README)");
-                explain();
-                return -1;
-        }
 
 	tail = NLMSG_TAIL(n);
 	addattr_l(n, 1024, TCA_OPTIONS, NULL, 0);
 	if (limit)
-		addattr_l(n, 1024, TCA_DUALPI2_LIMIT, &limit, sizeof(limit));
+		addattr32(n, 1024, TCA_DUALPI2_LIMIT, limit);
 	if (tupdate)
-		addattr_l(n, 1024, TCA_DUALPI2_TUPDATE, &tupdate, sizeof(tupdate));
+		addattr32(n, 1024, TCA_DUALPI2_TUPDATE, tupdate);
 	if (target)
-		addattr_l(n, 1024, TCA_DUALPI2_TARGET, &target, sizeof(target));
+		addattr32(n, 1024, TCA_DUALPI2_TARGET, target);
 	if (alpha != DEFAULT_ALPHA_BETA)
-		addattr_l(n, 1024, TCA_DUALPI2_ALPHA, &alpha, sizeof(alpha));
+		addattr32(n, 1024, TCA_DUALPI2_ALPHA, alpha);
 	if (beta != DEFAULT_ALPHA_BETA)
-		addattr_l(n, 1024, TCA_DUALPI2_BETA, &beta, sizeof(beta));
-	if (queue_mask != -1)
-		addattr_l(n, 1024, TCA_DUALPI2_DUALQ, &queue_mask, sizeof(queue_mask));
-	if (ecn != -1)
-		addattr_l(n, 1024, TCA_DUALPI2_ECN, &ecn, sizeof(ecn));
-	if (l_drop)
-		addattr_l(n, 1024, TCA_DUALPI2_L_DROP, &l_drop,
-			  sizeof(l_drop));
-	if (kfactor)
-		addattr_l(n, 1024, TCA_DUALPI2_K, &kfactor, sizeof(kfactor));
-	if (et_packets)
-                addattr_l(n, 1024, TCA_DUALPI2_ET_PACKETS, &et_packets, sizeof(et_packets));
-	if (l_thresh)
-		addattr_l(n, 1024, TCA_DUALPI2_L_THRESH, &l_thresh, sizeof(l_thresh));
+		addattr32(n, 1024, TCA_DUALPI2_BETA, beta);
+	if (ecn_mask != INET_ECN_NOT_ECT)
+		addattr8(n, 1024, TCA_DUALPI2_ECN_MASK, ecn_mask);
+	if (drop_overload != -1)
+		addattr8(n, 1024, TCA_DUALPI2_DROP_OVERLOAD, drop_overload);
+	if (coupling_factor != -1)
+		addattr8(n, 1024, TCA_DUALPI2_COUPLING, coupling_factor);
+	if (step_thresh) {
+		addattr32(n, 1024, TCA_DUALPI2_STEP_THRESH, step_thresh);
+                addattr8(n, 1024, TCA_DUALPI2_STEP_PACKETS, step_packets);
+	}
 	if (drop_early != -1)
-		addattr_l(n, 1024, TCA_DUALPI2_DROP_EARLY, &drop_early,
-			  sizeof(drop_early));
-	if (wrr_ratio)
-		addattr_l(n, 1024, TCA_DUALPI2_WRR_RATIO, &wrr_ratio, sizeof(wrr_ratio));
+		addattr8(n, 1024, TCA_DUALPI2_DROP_EARLY, drop_early);
+	if (c_protection != -1)
+		addattr8(n, 1024, TCA_DUALPI2_C_PROTECTION, c_protection);
 
 	tail->rta_len = (void *)NLMSG_TAIL(n) - (void *)tail;
 	return 0;
@@ -273,21 +298,10 @@ static int dualpi2_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 static int dualpi2_print_opt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 {
 	struct rtattr *tb[TCA_DUALPI2_MAX + 1];
-	unsigned int limit;
-	unsigned int tupdate;
-	unsigned int target;
-	unsigned int alpha;
-	float alpha_f;
-	unsigned int beta;
-	float beta_f;
-	unsigned int queue_mask;
-	unsigned int ecn;
-	unsigned int et_packets;
-	unsigned int l_thresh;
-	unsigned int kfactor;
-	unsigned int l_drop;
-	unsigned int drop_early;
-	unsigned int wrr_ratio;
+	uint32_t tupdate;
+	uint32_t target;
+	uint32_t step_thresh;
+	bool step_packets = false;
 	SPRINT_BUF(b1);
 
 	if (opt == NULL)
@@ -296,93 +310,70 @@ static int dualpi2_print_opt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 	parse_rtattr_nested(tb, TCA_DUALPI2_MAX, opt);
 
 	if (tb[TCA_DUALPI2_LIMIT] &&
-	    RTA_PAYLOAD(tb[TCA_DUALPI2_LIMIT]) >= sizeof(__u32)) {
-		limit = rta_getattr_u32(tb[TCA_DUALPI2_LIMIT]);
-		fprintf(f, "limit %up ", limit);
-	}
+	    RTA_PAYLOAD(tb[TCA_DUALPI2_LIMIT]) >= sizeof(__uint32_t))
+		fprintf(f, "limit %up ",
+			rta_getattr_u32(tb[TCA_DUALPI2_LIMIT]));
 	if (tb[TCA_DUALPI2_TARGET] &&
-	    RTA_PAYLOAD(tb[TCA_DUALPI2_TARGET]) >= sizeof(__u32)) {
+	    RTA_PAYLOAD(tb[TCA_DUALPI2_TARGET]) >= sizeof(__uint32_t)) {
 		target = rta_getattr_u32(tb[TCA_DUALPI2_TARGET]);
 		fprintf(f, "target %s ", sprint_time(target, b1));
 	}
 	if (tb[TCA_DUALPI2_TUPDATE] &&
-	    RTA_PAYLOAD(tb[TCA_DUALPI2_TUPDATE]) >= sizeof(__u32)) {
+	    RTA_PAYLOAD(tb[TCA_DUALPI2_TUPDATE]) >= sizeof(__uint32_t)) {
 		tupdate = rta_getattr_u32(tb[TCA_DUALPI2_TUPDATE]);
 		fprintf(f, "tupdate %s ", sprint_time(tupdate, b1));
 	}
 	if (tb[TCA_DUALPI2_ALPHA] &&
-	    RTA_PAYLOAD(tb[TCA_DUALPI2_ALPHA]) >= sizeof(__u32)) {
-		alpha = rta_getattr_u32(tb[TCA_DUALPI2_ALPHA]);
-		alpha_f = (float) alpha / 256;
-		fprintf(f, "alpha %f ", alpha_f);
+	    RTA_PAYLOAD(tb[TCA_DUALPI2_ALPHA]) >= sizeof(__uint32_t)) {
+		fprintf(f, "alpha %f ",
+			(float)rta_getattr_u32(tb[TCA_DUALPI2_ALPHA]) /
+			ALPHA_BETA_SCALE);
 	}
 	if (tb[TCA_DUALPI2_BETA] &&
-	    RTA_PAYLOAD(tb[TCA_DUALPI2_BETA]) >= sizeof(__u32)) {
-		beta = rta_getattr_u32(tb[TCA_DUALPI2_BETA]);
-		beta_f = (float) beta / 256;
-		fprintf(f, "beta %f ", beta_f);
+	    RTA_PAYLOAD(tb[TCA_DUALPI2_BETA]) >= sizeof(__uint32_t)) {
+		fprintf(f, "beta %f ",
+			(float)rta_getattr_u32(tb[TCA_DUALPI2_BETA]) /
+			ALPHA_BETA_SCALE);
 	}
-	if (tb[TCA_DUALPI2_DUALQ] &&
-	    RTA_PAYLOAD(tb[TCA_DUALPI2_DUALQ]) >= sizeof(__u32)) {
-		queue_mask = rta_getattr_u32(tb[TCA_DUALPI2_DUALQ]);
-		if (queue_mask == INET_ECN_NOT_ECT)
-			fprintf(f, "no_dualq ");
-		else if (queue_mask == INET_ECN_ECT_1)
-			fprintf(f, "l4s_dualq ");
-		else if (queue_mask == INET_ECN_CE)
-			fprintf(f, "dc_dualq ");
-	}
-	if (tb[TCA_DUALPI2_ECN] &&
-	    RTA_PAYLOAD(tb[TCA_DUALPI2_ECN]) >= sizeof(__u32)) {
-		ecn = rta_getattr_u32(tb[TCA_DUALPI2_ECN]);
-		if (ecn == INET_ECN_NOT_ECT)
-			fprintf(f, "no_ecn ");
-		else if (ecn == (INET_ECN_MASK << 2))
-			fprintf(f, "classic_ecn ");
-		else if (ecn == ((INET_ECN_MASK << 2) | 1))
-			fprintf(f, "l4s_ecn ");
-		else if (ecn == ((INET_ECN_MASK << 2) | INET_ECN_CE))
-			fprintf(f, "dc_ecn ");
-	}
-	if (tb[TCA_DUALPI2_K] &&
-	    RTA_PAYLOAD(tb[TCA_DUALPI2_K]) >= sizeof(__u32)) {
-		kfactor = rta_getattr_u32(tb[TCA_DUALPI2_K]);
-		fprintf(f, "k %u ", kfactor);
-	}
-	if (tb[TCA_DUALPI2_L_DROP] &&
-	    RTA_PAYLOAD(tb[TCA_DUALPI2_L_DROP]) >= sizeof(__u32)) {
-		l_drop = rta_getattr_u32(tb[TCA_DUALPI2_L_DROP]);
-		if (l_drop > 0)
-			fprintf(f, "l_drop %u ", l_drop);
+	if (tb[TCA_DUALPI2_ECN_MASK] &&
+	    RTA_PAYLOAD(tb[TCA_DUALPI2_ECN_MASK]) >= sizeof(__u8))
+		fprintf(f, "%s ",
+			get_ecn_type(rta_getattr_u8(tb[TCA_DUALPI2_ECN_MASK])));
+	if (tb[TCA_DUALPI2_COUPLING] &&
+	    RTA_PAYLOAD(tb[TCA_DUALPI2_COUPLING]) >= sizeof(__u8))
+		fprintf(f, "coupling_factor %u ",
+			rta_getattr_u8(tb[TCA_DUALPI2_COUPLING]));
+	if (tb[TCA_DUALPI2_DROP_OVERLOAD] &&
+	    RTA_PAYLOAD(tb[TCA_DUALPI2_DROP_OVERLOAD]) >= sizeof(__u8)) {
+		if (rta_getattr_u8(tb[TCA_DUALPI2_DROP_OVERLOAD]))
+			fprintf(f, "drop_on_overload ");
 		else
-			fprintf(f, "c_limit ");
+			fprintf(f, "overflow ");
 	}
-	if (tb[TCA_DUALPI2_ET_PACKETS] &&
-            RTA_PAYLOAD(tb[TCA_DUALPI2_ET_PACKETS]) >= sizeof(__u32)) {
-                et_packets = rta_getattr_u32(tb[TCA_DUALPI2_ET_PACKETS]);
-                if (et_packets > 0)
-                        fprintf(f, "et_packets ");
-                else
-                        fprintf(f, "et_time ");
-        }
-	if (tb[TCA_DUALPI2_L_THRESH] &&
-	    RTA_PAYLOAD(tb[TCA_DUALPI2_L_THRESH]) >= sizeof(__u32)) {
-		l_thresh = rta_getattr_u32(tb[TCA_DUALPI2_L_THRESH]);
-		fprintf(f, "l_thresh %s ", sprint_time(l_thresh, b1));
+	if (tb[TCA_DUALPI2_STEP_PACKETS] &&
+            RTA_PAYLOAD(tb[TCA_DUALPI2_STEP_PACKETS]) >= sizeof(__u8) &&
+	    rta_getattr_u8(tb[TCA_DUALPI2_STEP_PACKETS]))
+                        step_packets = true;
+	if (tb[TCA_DUALPI2_STEP_THRESH] &&
+	    RTA_PAYLOAD(tb[TCA_DUALPI2_STEP_THRESH]) >= sizeof(__uint32_t)) {
+		step_thresh = rta_getattr_u32(tb[TCA_DUALPI2_STEP_THRESH]);
+		if (step_packets)
+			fprintf(f, "step_thresh %upkt ", step_thresh);
+		else
+			fprintf(f, "step_thresh %s ",
+				sprint_time(step_thresh, b1));
 	}
 	if (tb[TCA_DUALPI2_DROP_EARLY] &&
-	    RTA_PAYLOAD(tb[TCA_DUALPI2_DROP_EARLY]) >= sizeof(__u32)) {
-		drop_early = rta_getattr_u32(tb[TCA_DUALPI2_DROP_EARLY]);
-		if (drop_early)
+	    RTA_PAYLOAD(tb[TCA_DUALPI2_DROP_EARLY]) >= sizeof(__u8)) {
+		if (rta_getattr_u8(tb[TCA_DUALPI2_DROP_EARLY]))
 			fprintf(f, "drop_enqueue ");
 		else
 			fprintf(f, "drop_dequeue ");
 	}
-	if (tb[TCA_DUALPI2_WRR_RATIO] &&
-            RTA_PAYLOAD(tb[TCA_DUALPI2_WRR_RATIO]) >= sizeof(__u32)) {
-                wrr_ratio = rta_getattr_u32(tb[TCA_DUALPI2_WRR_RATIO]);
-                fprintf(f, "wrr_ratio %u ", wrr_ratio);
-        }
+	if (tb[TCA_DUALPI2_C_PROTECTION] &&
+            RTA_PAYLOAD(tb[TCA_DUALPI2_C_PROTECTION]) >= sizeof(__u8))
+                fprintf(f, "classic_protection %u%% ",
+			rta_getattr_u8(tb[TCA_DUALPI2_C_PROTECTION]));
 
 	return 0;
 }
@@ -399,12 +390,11 @@ static int dualpi2_print_xstats(struct qdisc_util *qu, FILE *f,
 		return -1;
 
 	st = RTA_DATA(xstats);
-	/* prob is returned as a fracion of maximum integer value */
 	fprintf(f, "prob %f delay_c %uus delay_l %uus\n",
-		(double)st->prob / (double)0xffffffff, st->delay_c, st->delay_l);
-	fprintf(f, "pkts_in %u overlimit %u dropped %u maxq %u ecn_mark %u\n",
-		st->packets_in, st->overlimit, st->dropped, st->maxq,
-		st->ecn_mark);
+		(double)st->prob / (double)MAX_PROB, st->delay_c, st->delay_l);
+	fprintf(f, "pkts_in_c %u pkts_in_l %u maxq %u ecn_mark %u\n",
+		st->packets_in_c, st->packets_in_l, st->maxq, st->ecn_mark);
+	fprintf(f, "credit %d (%c)\n", st->credit, st->credit > 0 ? 'C' : 'L');
 	return 0;
 
 }
