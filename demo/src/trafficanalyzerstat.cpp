@@ -185,8 +185,8 @@ void TrafficAnalyzerStat::getRateDropMarkStat()
 
     // Convert to Mbps from bytes per sec (value * 8 / 1000000)
     dd->fair_rate /= 125000;
-    // Convert to Kb
-    dd->fair_window /= 1000;
+    // Convert to MTU-sized packets
+    dd->fair_window /= 1514.0 * 8;
 }
 
 void TrafficAnalyzerStat::start()

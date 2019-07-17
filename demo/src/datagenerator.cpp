@@ -101,8 +101,8 @@ void DataGenerator::updateData()
            m_dctcpclient->updateSamples(dd.ecn_th, dd.cbrrate_ecn, dd.alrate_ecn, dataLL, dataLL_hs);
            m_cubicclient->updateSamples(dd.nonecn_th, dd.cbrrate_nonecn, dd.alrate_nonecn, dataC, dataC_hs);
        } else {
-           m_dctcpclient->updateFairRate(dd.fair_window, QStringLiteral(" kB"));
-           m_cubicclient->updateFairRate(dd.fair_window, QStringLiteral(" kB"));
+           m_dctcpclient->updateFairRate(dd.fair_window, QStringLiteral(" Packets"));
+           m_cubicclient->updateFairRate(dd.fair_window, QStringLiteral(" Packets"));
            m_dctcpclient->updateSamples(dd.ecn_w, dd.cbrrate_ecn, dd.alw_ecn, dataLL, dataLL_hs);
            m_cubicclient->updateSamples(dd.nonecn_w, dd.cbrrate_nonecn, dd.alw_nonecn, dataC, dataC_hs);
        }
