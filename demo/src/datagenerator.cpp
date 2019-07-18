@@ -145,27 +145,27 @@ void DataGenerator::setIPClass(bool toggled)
 void DataGenerator::updateLinkCap(int linkcap)
 {
      pthread_mutex_lock(&demo_data->mutex);
-     demo_data->linkcap = (double)linkcap*1000000/8;
+     demo_data->linkcap = (double)linkcap * 1000000 / 8;
      pthread_mutex_unlock(&demo_data->mutex);
 }
 
 void DataGenerator::updateDctcpRtt(int value)
 {
     pthread_mutex_lock(&demo_data->mutex);
-    demo_data->rtt_ecn = (double)value;
+    demo_data->rtt_ecn = (double)value / 1000.0;
     pthread_mutex_unlock(&demo_data->mutex);
 }
 
 void DataGenerator::updateCubicRtt(int value)
 {
     pthread_mutex_lock(&demo_data->mutex);
-    demo_data->rtt_nonecn = (double)value;
+    demo_data->rtt_nonecn = (double)value / 1000.0;
     pthread_mutex_unlock(&demo_data->mutex);
 }
 
 void DataGenerator::updateBaseRtt(int value)
 {
     pthread_mutex_lock(&demo_data->mutex);
-    demo_data->rtt_base = (double)value;
+    demo_data->rtt_base = (double)value / 1000.0;
     pthread_mutex_unlock(&demo_data->mutex);
 }

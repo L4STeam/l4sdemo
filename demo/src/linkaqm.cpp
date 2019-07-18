@@ -349,8 +349,8 @@ void Linkaqm::update_link_properties()
 
 void Linkaqm::updateAQM(int num)
 {
-	(void)num;
-	update_link_properties();
+    (void)num;
+    update_link_properties();
 }
 
 void Linkaqm::updateLink(int num)

@@ -8,12 +8,12 @@
 
 static inline double classic_rtt(const DemoData *dd)
 {
-	return (double)dd->avg_qsize_c / 1000 + dd->rtt_base;
+	return (double)dd->avg_qsize_c / 1000 + dd->rtt_base + dd->rtt_nonecn;
 }
 
 static inline double l4s_rtt(const DemoData *dd)
 {
-	return (double)dd->avg_qsize_ll / 1000 + dd->rtt_base;
+	return (double)dd->avg_qsize_ll / 1000 + dd->rtt_base + dd->rtt_ecn;
 }
 
 TrafficAnalyzerStat::TrafficAnalyzerStat(ThreadParam* param,
