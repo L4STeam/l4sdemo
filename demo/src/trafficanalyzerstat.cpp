@@ -6,6 +6,16 @@
 
 #define percentile(p, n) (round(float(p)/100*float(n)+float(1)/2))
 
+static inline double classic_rtt(const DemoData *dd)
+{
+	return (double)dd->avg_qsize_c / 1000 + dd->rtt_base;
+}
+
+static inline double l4s_rtt(const DemoData *dd)
+{
+	return (double)dd->avg_qsize_ll / 1000 + dd->rtt_base;
+}
+
 TrafficAnalyzerStat::TrafficAnalyzerStat(ThreadParam* param,
 					 DemoData* demodata)
 	: tp(param)
@@ -84,11 +94,11 @@ void TrafficAnalyzerStat::getQSStat()
 
 void TrafficAnalyzerStat::calcWindow(std::vector<double> *th,
 				     std::vector<double> *w,
-				     double avg_qs, double rtt)
+				     double rtt)
 {
     int flowid = 0;
     for (auto flow = th->begin(); flow != th->end(); ++flow){
-        double window = *flow *(avg_qs + rtt)*100/dd->fair_window;
+        double window = *flow * rtt * 100/dd->fair_window;
 	if (!tp->quiet)
 		printf("fair window %lf\trtt: %lf\n", window, rtt);
         w->at(flowid++) = window;
@@ -169,24 +179,24 @@ void TrafficAnalyzerStat::getRateDropMarkStat()
 
         dd->fair_rate = remaining_bw / tot_greedy_flows;
         dd->fair_window = remaining_bw /
-		(greedy_flows_ecn / (dd->avg_qsize_ll + dd->rtt_base) +
-		 greedy_flows_nonecn / (dd->avg_qsize_c + dd->rtt_base));
+		((double)greedy_flows_ecn / l4s_rtt(dd) +
+		 (double)greedy_flows_nonecn / classic_rtt(dd));
 
-        calcWindow(&dd->ecn_th, &dd->ecn_w, dd->avg_qsize_ll, dd->rtt_base);
-        calcWindow(&dd->nonecn_th, &dd->nonecn_w, dd->avg_qsize_c, dd->rtt_base);
+        calcWindow(&dd->ecn_th, &dd->ecn_w, l4s_rtt(dd));
+        calcWindow(&dd->nonecn_th, &dd->nonecn_w, classic_rtt(dd));
 
      } else {
         dd->fair_rate = remaining_bw;
         if (al_flows_ecn + al_flows_nonecn > 0) {
             dd->fair_rate /= (al_flows_ecn + al_flows_nonecn);
             dd->fair_window = remaining_bw /
-		    (al_flows_ecn / (dd->avg_qsize_ll + dd->rtt_base) +
-		     al_flows_nonecn / (dd->avg_qsize_c + dd->rtt_base));
+		    (al_flows_ecn / l4s_rtt(dd) +
+		     al_flows_nonecn / classic_rtt(dd));
         }
     }
 
-    dd->alw_ecn = dd->alrate_ecn * (dd->avg_qsize_ll + dd->rtt_base) * 100 / dd->fair_window;
-    dd->alw_nonecn = dd->alrate_nonecn * (dd->avg_qsize_c + dd->rtt_base) * 100 / dd->fair_window;
+    dd->alw_ecn = dd->alrate_ecn * l4s_rtt(dd) * 100 / dd->fair_window;
+    dd->alw_nonecn = dd->alrate_nonecn * classic_rtt(dd) * 100 / dd->fair_window;
 
     dd->alrate_ecn = dd->alrate_ecn * 100 / dd->fair_rate;
     dd->alrate_nonecn = dd->alrate_nonecn * 100 / dd->fair_rate;
