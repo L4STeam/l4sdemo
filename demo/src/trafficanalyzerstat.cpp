@@ -98,11 +98,11 @@ void TrafficAnalyzerStat::calcWindow(std::vector<double> *th,
 {
     int flowid = 0;
     for (auto flow = th->begin(); flow != th->end(); ++flow){
-        double window = *flow * rtt * 100/dd->fair_window;
+        double window = *flow * rtt * 100 / dd->fair_window;
 	if (!tp->quiet)
 		printf("fair window %lf\trtt: %lf\n", window, rtt);
         w->at(flowid++) = window;
-        *flow = *flow*100/dd->fair_rate;
+        *flow = *flow * 100 / dd->fair_rate;
     }
 }
 
