@@ -15,15 +15,24 @@ function set_tcp_cc()
     tcp_cc=$2
     ecn_cc=0
 
-    if [ "$tcp_cc" == "cubic_ecn" ]; then
-            tcp_cc='cubic'
-            ecn_cc='1'
-    fi
-
-    if [ "$tcp_cc" == "bbr_ecn" ]; then
-            tcp_cc='bbr'
-            ecn_cc='1'
-    fi
+    case "$tcp_cc" in
+    cubic_ecn)
+        tcp_cc='cubic'
+        ecn_cc='1'
+        ;;
+    bbr_ecn)
+        tcp_cc='bbr'
+        ecn_cc='1'
+        ;;
+    prague)
+        # Enable AccECN
+        ecn_cc='3'
+        ;;
+    prague_cwr)
+        ecn_cc='1'
+        do_ssh $ip "sudo sysctl -w net.ipv4.tcp_force_peer_unreliable_ece=1"
+        ;;
+    esac
 
     do_ssh $ip "sudo sysctl -w net.ipv4.tcp_congestion_control=$tcp_cc"
     do_ssh $ip "sudo sysctl -w net.ipv4.tcp_ecn=$ecn_cc"

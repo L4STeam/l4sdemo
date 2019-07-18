@@ -78,7 +78,7 @@ Client::Client(QWidget *parent, const char* download_path,
     , ssh_cbr(cbr_path)
     , ssh_cc(cc_path)
 {
-
+    _RUN_SCRIPT(ssh_killall);
     QFont axisFont("Times New Roman", 10);
     QFont titleFont("Helvetica", 12);
     QFont smallTitleFont("Helvetica", 8);
@@ -94,7 +94,6 @@ Client::Client(QWidget *parent, const char* download_path,
     readRTTList();
     readCBRList();
     readCCList();
-    _RUN_SCRIPT(ssh_killall);
 
     QVBoxLayout *mainLayout = new QVBoxLayout;
     setLayout(mainLayout);

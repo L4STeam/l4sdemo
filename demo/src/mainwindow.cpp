@@ -19,33 +19,7 @@
 
 MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
 {
-    QHBoxLayout *mainLayout = new QHBoxLayout;
-    setLayout(mainLayout);
-
-    QVBoxLayout *firstColumn = new QVBoxLayout;
-    mainLayout->addLayout(firstColumn);
-    std::stringstream dctcpTitle, cubicTitle;
-
-    std::string client_a = safe_getenv("CLIENT_A");
-    std::string server_a = safe_getenv("SERVER_A");
-    std::string client_b = safe_getenv("CLIENT_B");
-    std::string server_b = safe_getenv("SERVER_B");
-    std::string pcapf = safe_getenv("PCAPFILTER");
-    std::string dev = safe_getenv("IFACE");
-    std::cout
-	    << "Client A: " << client_a << std::endl
-	    << "Server A: " << server_a << std::endl
-	    << "Client B: " << client_b << std::endl
-	    << "Server B: " << server_b << std::endl
-	    << "PCAPFILTER: " << pcapf << std::endl
-	    << "INTERFACE: " << dev << std::endl;
-    dctcpTitle
-	    << "$CLIENT_A [" << client_a
-	    << "] <> $SERVER_A [" << server_a << "]";
-    cubicTitle
-	    << "$CLIENT_B [" << client_b
-	    << "] <> $SERVER_B [" << server_b << "]";
-
+    _RUN_SCRIPT(res_path("/sh/prepare_endhosts.sh"));
     Client *dctcpclient = new Client(this,
 		    res_path("/sh/dctcp_download.sh").c_str(),
 		    res_path("/sh/killall_dctcp.sh").c_str(),
@@ -55,9 +29,6 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
 		    /* res_path("/sh/al_dctcp.sh").c_str(), */
 		    res_path("/sh/cbr_dctcp.sh").c_str(),
 		    Qt::blue, 0);
-    dctcpclient->setTitle(dctcpTitle.str().c_str());
-    firstColumn->addWidget(dctcpclient);
-    firstColumn->setAlignment(dctcpclient, Qt::AlignTop);
     Client *cubicclient = new Client(this,
 		    res_path("/sh/cubic_download.sh").c_str(),
 		    res_path("/sh/killall_cubic.sh").c_str(),
@@ -67,6 +38,27 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
 		    /* res_path("/sh/al_cubic.sh").c_str(), */
 		    res_path("/sh/cbr_cubic.sh").c_str(),
 		    QColor(255, 157, 0), 1);
+
+    QHBoxLayout *mainLayout = new QHBoxLayout;
+    setLayout(mainLayout);
+
+    QVBoxLayout *firstColumn = new QVBoxLayout;
+    mainLayout->addLayout(firstColumn);
+
+    std::string client_a = safe_getenv("CLIENT_A");
+    std::string server_a = safe_getenv("SERVER_A");
+    std::string client_b = safe_getenv("CLIENT_B");
+    std::string server_b = safe_getenv("SERVER_B");
+    std::stringstream dctcpTitle, cubicTitle;
+    dctcpTitle
+	    << "$CLIENT_A [" << client_a
+	    << "] <> $SERVER_A [" << server_a << "]";
+    cubicTitle
+	    << "$CLIENT_B [" << client_b
+	    << "] <> $SERVER_B [" << server_b << "]";
+    dctcpclient->setTitle(dctcpTitle.str().c_str());
+    firstColumn->addWidget(dctcpclient);
+    firstColumn->setAlignment(dctcpclient, Qt::AlignTop);
     cubicclient->setTitle(cubicTitle.str().c_str());
     firstColumn->addWidget(cubicclient);
     firstColumn->setAlignment(cubicclient, Qt::AlignBottom);
@@ -111,11 +103,13 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
     QVBoxLayout *secondColumn = new QVBoxLayout;
     mainLayout->addLayout(secondColumn);
     Linkaqm *laqm = new Linkaqm();
+    std::string pcapf = safe_getenv("PCAPFILTER");
+    std::string dev = safe_getenv("IFACE");
     std::stringstream laqm_title;
     laqm_title
 	    << "Monitoring $IFACE[" << dev << "] "
 	    << "with $PCAPFILTER[" << pcapf << "]"
-	    <<std::endl;
+	    << std::endl;
     laqm->setTitle(laqm_title.str().c_str());
     secondColumn->addWidget(laqm);
 
@@ -160,7 +154,6 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
     connect(bip, SIGNAL(toggled(bool)), g, SLOT(setIPClass(bool)));
 
     generatorThread->start();
-    _RUN_SCRIPT(res_path("/sh/prepare_endhosts.sh"));
 }
 
 MainWindow::~MainWindow()

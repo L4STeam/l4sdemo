@@ -82,7 +82,9 @@ void TrafficAnalyzerStat::getQSStat()
     }
 }
 
-void TrafficAnalyzerStat::calcWindow(std::vector<double> *th, std::vector<double> *w, double avg_qs, double rtt)
+void TrafficAnalyzerStat::calcWindow(std::vector<double> *th,
+				     std::vector<double> *w,
+				     double avg_qs, double rtt)
 {
     int flowid = 0;
     for (auto flow = th->begin(); flow != th->end(); ++flow){
@@ -145,11 +147,16 @@ void TrafficAnalyzerStat::getRateDropMarkStat()
 
     double scale = 0.01;
     if (dd->packets_ecn > 0)
-        dd->mark_ecn = floor((double)marks_ecn*100/dd->packets_ecn / scale + 0.5) * scale;
+        dd->mark_ecn = floor((double)marks_ecn * 100
+			     / dd->packets_ecn / scale + 0.5) * scale;
     if (dd->packets_ecn + drops_ecn > 0)
-            dd->drop_ecn = floor((double)drops_ecn*100/(dd->packets_ecn + drops_ecn) / scale + 0.5) * scale;
+            dd->drop_ecn = floor((double)drops_ecn * 100
+				 / (dd->packets_ecn + drops_ecn)
+				 / scale + 0.5) * scale;
     if (dd->packets_nonecn + drops_nonecn > 0) {
-        dd->drop_nonecn = floor((double)drops_nonecn*100/(dd->packets_nonecn + drops_nonecn) / scale + 0.5) * scale;
+        dd->drop_nonecn = floor((double)drops_nonecn * 100
+				/ (dd->packets_nonecn + drops_nonecn)
+				/ scale + 0.5) * scale;
     }
     dd->util = ceil((double)(rate_ecn + rate_nonecn)*100 / dd->linkcap);
     /* if (dd->util > 100) */
@@ -161,7 +168,9 @@ void TrafficAnalyzerStat::getRateDropMarkStat()
         remaining_bw = remaining_bw - dd->alrate_ecn - dd->alrate_nonecn;
 
         dd->fair_rate = remaining_bw / tot_greedy_flows;
-        dd->fair_window = remaining_bw / (greedy_flows_ecn / (dd->avg_qsize_ll + dd->rtt_base) + greedy_flows_nonecn / (dd->avg_qsize_c + dd->rtt_base));
+        dd->fair_window = remaining_bw /
+		(greedy_flows_ecn / (dd->avg_qsize_ll + dd->rtt_base) +
+		 greedy_flows_nonecn / (dd->avg_qsize_c + dd->rtt_base));
 
         calcWindow(&dd->ecn_th, &dd->ecn_w, dd->avg_qsize_ll, dd->rtt_base);
         calcWindow(&dd->nonecn_th, &dd->nonecn_w, dd->avg_qsize_c, dd->rtt_base);
@@ -170,7 +179,9 @@ void TrafficAnalyzerStat::getRateDropMarkStat()
         dd->fair_rate = remaining_bw;
         if (al_flows_ecn + al_flows_nonecn > 0) {
             dd->fair_rate /= (al_flows_ecn + al_flows_nonecn);
-            dd->fair_window = remaining_bw / (al_flows_ecn / (dd->avg_qsize_ll + dd->rtt_base) + al_flows_nonecn / (dd->avg_qsize_c + dd->rtt_base));
+            dd->fair_window = remaining_bw /
+		    (al_flows_ecn / (dd->avg_qsize_ll + dd->rtt_base) +
+		     al_flows_nonecn / (dd->avg_qsize_c + dd->rtt_base));
         }
     }
 
