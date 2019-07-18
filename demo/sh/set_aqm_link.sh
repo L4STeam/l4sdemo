@@ -24,7 +24,6 @@ do_tc() {
 __set_aqm() {
 	aqmname2=$1
 	aqmpars="$2"
-	declare -i rtt2=$3
 
 	echo "# setting $aqmname2 $aqmpars"
 	do_tc "qdisc del dev $iface root"
@@ -35,7 +34,7 @@ __set_aqm() {
 
 	#set extra rtt
     do_tc "qdisc del dev ${REV_IFACE} root"
-    do_tc "qdisc add dev ${REV_IFACE} root netem delay ${rtt2}.0ms limit 40000"
+    do_tc "qdisc add dev ${REV_IFACE} root netem delay ${brtt}.0ms limit 40000"
 
 	do_tc "qdisc add dev $iface parent 1:10 $aqmname2 $aqmpars"
 
