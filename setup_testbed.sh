@@ -5,11 +5,13 @@ set -ex
 HERE=$(realpath $(dirname $0))
 source "${HERE}/environment.sh"
 
-for unit in 'apt-daily.timer' 'apt-daily-upgrade.timer'; do
-	sudo systemctl disable --now $unit
-done
-sudo systemctl daemon-reload
-sudo systemd-run --property="After=apt-daily.service apt-daily-upgrade.service" --wait /bin/true
+if which systemctl; then
+    for unit in 'apt-daily.timer' 'apt-daily-upgrade.timer'; do
+        sudo systemctl disable --now $unit
+    done
+    sudo systemctl daemon-reload
+    sudo systemd-run --property="After=apt-daily.service apt-daily-upgrade.service" --wait /bin/true
+fi
 sudo env DEBIAN_FRONTEND=noninteractive \
  	apt-get -y purge unattended-upgrades
 sudo env DEBIAN_FRONTEND=noninteractive \

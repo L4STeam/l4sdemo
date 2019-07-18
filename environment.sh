@@ -30,8 +30,10 @@ if [ -x "environment.local" ]; then
     source environment.local
 fi
 
-eval $(ssh-agent -s)
-ssh-add "${SSH_KEY}"
+if [ -f "${SSH_KEY}" ]; then
+    eval $(ssh-agent -s)
+    ssh-add "${SSH_KEY}"
+fi
 
 # The following variables should be good as-is
 export PCAPFILTER="ip and src net $SRC_NET"
