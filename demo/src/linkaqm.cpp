@@ -334,42 +334,34 @@ void Linkaqm::updateComboCDrop(int num)
     updatePlotScale(plotDropHistoryC, num);
 }
 
-void Linkaqm::updateAQM(int num)
+void Linkaqm::update_link_properties()
 {
-    std::stringstream command;
     int linkindex = linkselect->currentIndex();
+    int aqmindex = aqmselect->currentIndex();
     int brttindex = brttselect->currentIndex();
+    std::stringstream command;
     command << res_path("/sh/set_aqm_link.sh") << " "
-	    << aqmIDList.at(num) << " "
+	    << aqmIDList.at(aqmindex) << " "
 	    << linkCapValues.at(linkindex) << " "
 	    << brttValues.at(brttindex);
     _RUN_SCRIPT(command.str());
+}
 
+void Linkaqm::updateAQM(int num)
+{
+	(void)num;
+	update_link_properties();
 }
 
 void Linkaqm::updateLink(int num)
 {
-    std::stringstream command;
-    int aqmindex = aqmselect->currentIndex();
-    int brttindex = brttselect->currentIndex();
-    command << res_path("/sh/set_aqm_link.sh") << " "
-	    << aqmIDList.at(aqmindex) << " "
-	    << linkCapValues.at(num) << " "
-	    << brttValues.at(brttindex);
-    _RUN_SCRIPT(command.str());
+    update_link_properties();
     linkChanged(linkCapValues.at(num));
 }
 
 void Linkaqm::updateBrtt(int num)
 {
-    std::stringstream command;
-    int aqmindex = aqmselect->currentIndex();
-    int linkindex = linkselect->currentIndex();
-    command << res_path(".sh/set_aqm_link.sh") << " "
-	    << aqmIDList.at(aqmindex) << " "
-	    << linkCapValues.at(linkindex) << " "
-	    << brttValues.at(num);
-    _RUN_SCRIPT(command.str());
+    update_link_properties();
     brttChanged(brttValues.at(num));
 }
 

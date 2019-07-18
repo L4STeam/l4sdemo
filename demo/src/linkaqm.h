@@ -40,6 +40,7 @@ private:
     void readAQMList();
     void readLinkCapList();
     void readBrttList();
+    void update_link_properties();
 
     QMutex dataMutex;
 
