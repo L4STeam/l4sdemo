@@ -1,6 +1,8 @@
 #!/bin/bash
 
-source $(dirname $0)/environment.sh
+HERE=$(realpath $(dirname $0))
+source ${HERE}/environment.sh
+
 
 sudo sysctl -qw net.ipv4.ip_forward=1
 sudo ethtool -K $REV_IFACE gro off

@@ -5,7 +5,7 @@
 
 #include "compat-pkt_sched.h"
 
-#include "../../common/testbed.h" /* only used for testbed */
+#include "common/testbed.h" /* only used for testbed */
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 6, 0)
 /* Workaround for missing backports of qdisc_tree_reduce_backlog which was

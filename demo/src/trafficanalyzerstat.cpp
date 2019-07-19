@@ -197,7 +197,7 @@ void TrafficAnalyzerStat::getRateDropMarkStat()
     dd->cbrrate_nonecn = dd->cbrrate_nonecn * 100 / dd->linkcap;
 
     // Convert to Mbps
-    dd->fair_rate /= 100000.0;
+    dd->fair_rate /= 1000000.0;
     // Convert to MTU-sized packets, i.e., ethernet MTU bytes
     dd->fair_window /= (ETH_FRAME_LEN << 3);
 }
