@@ -8,7 +8,7 @@ DemoData::DemoData()
     pthread_mutex_init(&mutex, &errorcheck);
     pthread_cond_init(&newdata, NULL);
     init();
-    linkcap = 5000000;
+    linkcap = 40000000;
     rtt_ecn = 0;
     rtt_nonecn = 0;
     rtt_base = 0.007;

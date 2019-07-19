@@ -59,13 +59,13 @@ private:
 Client::Client(QWidget *parent, const char* download_path,
 	       const char* killall_path, const char* wb_path,
 	       const char* rtt_path, const char* cc_path,
-	       /* const char* al_path, */
+	       const char* al_path,
 	       const char* cbr_path, const QColor& color, int init_cc)
     : QGroupBox(parent)
     , linkcap(40)
     , displayNumDownloads(0)
     , noScaleDraw(0)
-    /* , noScaleDrawAL(0) */
+    , noScaleDrawAL(0)
     , unrelatedNumberScaleDraw(0)
     , complHS(true)
     , nrFlows(0)
@@ -74,7 +74,7 @@ Client::Client(QWidget *parent, const char* download_path,
     , ssh_download(download_path)
     , ssh_wb(wb_path)
     , ssh_rtt(rtt_path)
-    /* , ssh_al(al_path) */
+    , ssh_al(al_path)
     , ssh_cbr(cbr_path)
     , ssh_cc(cc_path)
 {
@@ -159,26 +159,26 @@ Client::Client(QWidget *parent, const char* download_path,
     marker->setValue(100.0,0.0);
     marker->attach(plotWidget);
 
-    /* plotWidgetAL = new QwtPlot(this); */
-    /* ALAppChart = new QwtPlotBarChart("AL"); */
-    /* noScaleDrawAL = new NoScaleDraw; */
-    /* ALAppChart->attach(plotWidgetAL); */
-    /* sampleAL.push_back(0); */
-    /* ALAppChart->setSamples(sampleAL); */
-    /* ALAppChart->setSpacing(0); */
-    /* QHBoxLayout *alSelectLayout = new QHBoxLayout; */
-    /* QLabel *titleAL = new QLabel("AL", this); */
-    /* titleAL->setContentsMargins(0,0,0,0); */
-   /* alCheckb = new QCheckBox(this);
+    plotWidgetAL = new QwtPlot(this);
+    ALAppChart = new QwtPlotBarChart("AL");
+    noScaleDrawAL = new NoScaleDraw;
+    ALAppChart->attach(plotWidgetAL);
+    sampleAL.push_back(0);
+    ALAppChart->setSamples(sampleAL);
+    ALAppChart->setSpacing(0);
+    QHBoxLayout *alSelectLayout = new QHBoxLayout;
+    QLabel *titleAL = new QLabel("AL", this);
+    titleAL->setContentsMargins(0,0,0,0);
+    alCheckb = new QCheckBox(this);
     alCheckb->setChecked(false);
-    alSelectLayout->addWidget(alCheckb);*/
-    /* alSelectLayout->addWidget(titleAL); */
+    alSelectLayout->addWidget(alCheckb);
+    alSelectLayout->addWidget(titleAL);
 
     QVBoxLayout *alccLayout = new QVBoxLayout;
     ccSelect = new QComboBox(this);
     ccSelect->insertItems(0, ccList);
     ccSelect->setFixedWidth(135);
-    /* alccLayout->addWidget(plotWidgetAL); */
+    alccLayout->addWidget(plotWidgetAL);
     alccLayout->addWidget(ccSelect);
 
     QVBoxLayout *ccSelectLayout = new QVBoxLayout;
@@ -187,23 +187,23 @@ Client::Client(QWidget *parent, const char* download_path,
     ccSelectLayout->addWidget(titleCC);
 
     QVBoxLayout *alccSelectLayout = new QVBoxLayout;
-    /* alccSelectLayout->addLayout(alSelectLayout); */
+    alccSelectLayout->addLayout(alSelectLayout);
     alccSelectLayout->addLayout(ccSelectLayout);
 
-    /* ALAppChart->setOrientation(Qt::Horizontal); */
-    /* QwtColumnSymbol *symbol = new QwtColumnSymbol(QwtColumnSymbol::Box); */
-    /* symbol->setPalette(color); */
-    /* ALAppChart->setSymbol(symbol); */
-    /* plotWidgetAL->setAxisMaxMajor(QwtPlot::xBottom, 2); */
-    /* plotWidgetAL->setAxisMaxMinor(QwtPlot::xBottom, 0); */
-    /* plotWidgetAL->setAxisAutoScale(QwtPlot::xBottom, false); */
-    /* plotWidgetAL->setAxisScale(QwtPlot::xBottom, 0.0, 200.0); */
-    /* plotWidgetAL->setFixedHeight(15); */
-    /* plotWidgetAL->setContentsMargins(-25,0,0,-25); */
-    /* QwtPlotMarker *marker1 = new QwtPlotMarker("limit1"); */
-    /* marker1->setLineStyle(QwtPlotMarker::VLine); */
-    /* marker1->setValue(100.0,0.0); */
-    /* marker1->attach(plotWidgetAL); */
+    ALAppChart->setOrientation(Qt::Horizontal);
+    QwtColumnSymbol *symbol = new QwtColumnSymbol(QwtColumnSymbol::Box);
+    symbol->setPalette(color);
+    ALAppChart->setSymbol(symbol);
+    plotWidgetAL->setAxisMaxMajor(QwtPlot::xBottom, 2);
+    plotWidgetAL->setAxisMaxMinor(QwtPlot::xBottom, 0);
+    plotWidgetAL->setAxisAutoScale(QwtPlot::xBottom, false);
+    plotWidgetAL->setAxisScale(QwtPlot::xBottom, 0.0, 200.0);
+    plotWidgetAL->setFixedHeight(15);
+    plotWidgetAL->setContentsMargins(-25,0,0,-25);
+    QwtPlotMarker *marker1 = new QwtPlotMarker("limit1");
+    marker1->setLineStyle(QwtPlotMarker::VLine);
+    marker1->setValue(100.0,0.0);
+    marker1->attach(plotWidgetAL);
 
     QwtText titleCBRX;
     titleCBRX.setFont(smallTitleFont);
@@ -275,9 +275,9 @@ Client::Client(QWidget *parent, const char* download_path,
     dataDisplayLayout->addLayout(alccLayout, 3,1,1,1);
     dataDisplayLayout->addLayout(alccSelectLayout, 3,0,1,1);
     dataDisplayLayout->addLayout(cbrLayout, 3,2,1,1);
-    /* alccSelectLayout->setAlignment(titleAL, Qt::AlignTop); */
+    alccSelectLayout->setAlignment(titleAL, Qt::AlignTop);
     alccSelectLayout->setAlignment(titleCC, Qt::AlignBottom);
-    /* alccLayout->setAlignment(plotWidgetAL, Qt::AlignTop); */
+    alccLayout->setAlignment(plotWidgetAL, Qt::AlignTop);
     alccLayout->setAlignment(ccSelect, Qt::AlignBottom);
 
     mainLayout->addLayout(dataDisplayLayout);
@@ -289,7 +289,7 @@ Client::Client(QWidget *parent, const char* download_path,
     connect(btnwb10, SIGNAL(toggled(bool)), this, SLOT(updateWebBrowsing100(bool)));
     connect(btnwb100, SIGNAL(toggled(bool)), this, SLOT(updateWebBrowsing10(bool)));
     connect(rttSelect, SIGNAL(currentIndexChanged(int)), this, SLOT(updateRTT(int)));
-  //  connect(alCheckb, SIGNAL(toggled(bool)), this, SLOT(updateAL(bool)));
+    connect(alCheckb, SIGNAL(toggled(bool)), this, SLOT(updateAL(bool)));
     connect(cbrSelect, SIGNAL(currentIndexChanged(int)), this, SLOT(updateCBR(int)));
     connect(ccSelect, SIGNAL(currentIndexChanged(int)), this, SLOT(updateCC(int)));
 
@@ -337,7 +337,7 @@ void Client::updateSamples(std::vector<double> rsamples, double cbr_rate,
               break;
     }
     sampleCBR.replace(0, cbr_rate);
-    /* sampleAL.replace(0, al_rate); */
+    sampleAL.replace(0, al_rate);
 
     int nr = 0;
     for (auto it = csamples.begin(), it_hs = csamples_hs.begin();
@@ -390,15 +390,15 @@ void Client::commitData()
 
     plotWidget->replot();
 
-    /* ALAppChart->setSamples(sampleAL); */
-    /* plotWidgetAL->replot(); */
+    ALAppChart->setSamples(sampleAL);
+    plotWidgetAL->replot();
     CBRAppChart->setSamples(sampleCBR);
     plotWidgetCBR->replot();
 
     QwtScaleWidget *scaleWidget = plotWidget->axisWidget(QwtPlot::xBottom);
     if (scaleWidget) scaleWidget->repaint();
-    /* QwtScaleWidget *scaleWidgetAL = plotWidgetAL->axisWidget(QwtPlot::xBottom); */
-    /* if (scaleWidgetAL) scaleWidgetAL->repaint(); */
+    QwtScaleWidget *scaleWidgetAL = plotWidgetAL->axisWidget(QwtPlot::xBottom);
+    if (scaleWidgetAL) scaleWidgetAL->repaint();
     QwtScaleWidget *scaleWidgetCBR = plotWidgetCBR->axisWidget(QwtPlot::xBottom);
     if (scaleWidgetCBR) scaleWidgetCBR->repaint();
 
@@ -542,12 +542,12 @@ void Client::setComplWOHS(bool value)
         updateComplHS(false);
 }
 
-/* void Client::updateAL(bool value) */
-/* { */
-/*     std::stringstream command; */
-/*     command << ssh_al << " " << int(value); */
-/*     _RUN_SCRIPT(command.str()); */
-/* } */
+void Client::updateAL(bool value)
+{
+    std::stringstream command;
+    command << ssh_al << " " << int(value);
+    _RUN_SCRIPT(command.str());
+}
 
 void Client::updateCBR(int value)
 {
@@ -558,14 +558,12 @@ void Client::updateCBR(int value)
 
 int Client::getCBRRate(int value)
 {
-    QMutexLocker m(&linkcapMutex);
-    int rate = linkcap*cbrValues.at(value)/100;
+    int rate = linkcap * cbrValues.at(value)/100;
     return rate;
 }
 
 void Client::updateLinkCap(int value)
 {
-    QMutexLocker m(&linkcapMutex);
     linkcap = value;
 }
 
@@ -579,31 +577,15 @@ void Client::updateCC(int value)
 {
     _setCC(ccValues.at(value));
     startDownloads();
-    if (btnwb10->isChecked()) {
-        std::stringstream command;
-        command << ssh_wb << "10 " << getLinkCap();
-        _RUN_SCRIPT(command.str());
-    } else if (btnwb100->isChecked()) {
-        std::stringstream command;
-        command << ssh_wb << "100 " << getLinkCap();
-        _RUN_SCRIPT(command.str());
-    }
-
-    int cbrrate = getCBRRate(cbrSelect->currentIndex());
-    if (cbrrate > 0) {
-        std::stringstream command;
-        command << ssh_cbr << " " << getCBRRate(value);
-        _RUN_SCRIPT(command.str());
-    }
-   /* if (alCheckb->isChecked()) {
-        std::stringstream command;
-        command << ssh_al << " " << int(value);
-        _RUN_SCRIPT(ssh_al.str());
-    }*/
+    if (btnwb10->isChecked())
+        updateWebBrowsing10(true);
+    else if (btnwb100->isChecked())
+        updateWebBrowsing100(true);
+    updateCBR(cbrSelect->currentIndex());
+    updateAL(alCheckb->isChecked());
 }
 
 int Client::getLinkCap()
 {
-    QMutexLocker m(&linkcapMutex);
     return linkcap;
 }

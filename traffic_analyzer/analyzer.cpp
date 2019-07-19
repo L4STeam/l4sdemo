@@ -6,8 +6,10 @@
 #include <errno.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include <netinet/if_ether.h> // includes net/ethernet.h
+#include <net/ethernet.h>
+#include <netinet/if_ether.h>
 #include <netinet/ip.h>
+#include <netinet/ip6.h>
 #include <netinet/udp.h>
 #include <netinet/tcp.h>
 #include <iostream>
@@ -32,15 +34,19 @@ typedef u_int32_t u32; // we use "kernel-style" u32 variables in numbers.h
 #define US_PER_S 1000000UL
 #define NSEC_PER_US 1000UL
 
-struct RateVar {
-public:
-    RateVar(uint32_t r, double c) {
-        rate = r;
-        cv = c;
-    }
-    uint32_t rate;
-    double cv;
+enum {
+	INET_ECN_NOT_ECT = 0,
+	INET_ECN_ECT_1 = 1,
+	INET_ECN_ECT_0 = 2,
+	INET_ECN_CE = 3,
+	INET_ECN_MASK = 3,
 };
+
+struct vlan_header {
+    struct ether_header ether;
+    __be16 vlan_tag;
+    __be16 ether_type;
+} __attribute__((__packed__));
 
 static void *printInfo(void *param);
 
@@ -86,8 +92,6 @@ ThreadParam::ThreadParam(uint32_t sinterval, std::string folder,
     pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
     pthread_cond_init(&quit_cond, &attr);
     pthread_mutex_init(&quit_lock, NULL);
-
-
 }
 
 void ThreadParam::swapDB(){ // called by printInfo
@@ -124,79 +128,122 @@ int decodeDrops(u32 value) {
     return fl2int(value, DROPS_M, DROPS_E);
 }
 
-void processPacket(u_char *, const struct pcap_pkthdr *header, const u_char *buffer)
+void processPacket(u_char *, const struct pcap_pkthdr *header,
+		   const u_char *buffer)
 {
-    struct iphdr *iph = (struct iphdr*)(buffer + 14); // ethernet header is 14 bytes
+#define _PARSE(type, name, offset) type *name = (type *)(buffer + offset)
+#define PARSE(type, name) _PARSE(type, name, offset)
 
-    uint8_t proto = iph->protocol;
-    uint16_t sport = 0;
-    uint16_t dport = 0;
+    uint32_t mark;
+    int offset, drops, qdelay_encoded;
+    uint32_t saddr, daddr; /* Will need to make this more generic */
+    uint16_t sport, dport;
+    uint8_t ts, proto;
+    double bitlen = header->len << 3;
 
+{
+    PARSE(struct ether_header, eth);
+    offset = sizeof(*eth);
+    __be16 type = eth->ether_type;
+parse_ethernet:
+    switch (ntohs(type)) {
+    case ETH_P_8021Q: {
+        if (offset != sizeof(*eth)) {
+            std::cerr << "Ignoring nested VLANs" << std::endl;
+            return;
+        }
+        _PARSE(struct vlan_header, vlan, 0);
+        offset = sizeof(*vlan);
+        type = vlan->ether_type;
+        goto parse_ethernet;
+    }
+    case ETH_P_IP: goto parse_ip;
+    case ETH_P_IPV6: goto parse_ipv6;
+    default: return;
+    }
+}
+
+parse_ip: {
+    PARSE(struct iphdr, iph);
+    offset += (iph->ihl << 2);
+    proto = iph->protocol;
+    saddr = iph->saddr;
+    daddr = iph->daddr;
+    ts = iph->tos & INET_ECN_MASK;
+    mark = (ts == INET_ECN_CE);
+    if (tp->ipclass)
+        ts = ntohl(saddr);
     uint16_t id = ntohs(iph->id);
-    int drops = decodeDrops(id >> 11); // drops stored in 5 bits MSB
-
+    drops = decodeDrops(id >> 11); // drops stored in 5 bits MSB
     // We don't decode queueing delay here as we need to store it in a table,
     // so defer this to the actual serialization of the table to file
-    int qdelay_encoded = id & 2047; // qdelay stored in 11 bits LSB
+    qdelay_encoded = id & 2047; // 2047 = 0b0000011111111111
+    goto parse_transport;
+}
 
-    if (proto == IPPROTO_TCP) {
-        struct tcphdr *tcph = (struct tcphdr*)(buffer + 14 + iph->ihl*4);
+parse_ipv6: {
+    /* Parse ipv6 header chains, ... */
+    return; /* This is a shame ... */
+}
+
+parse_transport: {
+    switch (proto) {
+    case IPPROTO_TCP: {
+        PARSE(struct tcphdr, tcph);
         sport = ntohs(tcph->source);
         dport = ntohs(tcph->dest);
-    } else if (proto == IPPROTO_UDP) {
-        struct udphdr *udph = (struct udphdr*) (buffer + 14 + iph->ihl*4);
+	break;
+    }
+    case IPPROTO_UDP: {
+        PARSE(struct udphdr, udph);
         sport = ntohs(udph->source);
         dport = ntohs(udph->dest);
+	break;
     }
+    default:
+	sport = 0;
+	dport = 0;
+	break;
+    }
+}
 
-    SrcDst sd(proto, iph->saddr, sport, iph->daddr, dport);
-    uint64_t iplen = ntohs(iph->tot_len) + 14; // include the 14 bytes in ethernet header
-                                               // the link bandwidth includes it
-    iplen *= 8; // use bits
-    std::map<SrcDst,FlowData> *fmap;
-    uint32_t mark = 0;
-
-    uint8_t ts = iph->tos;
-    if ((ts & 3) == 3)
-        mark = 1;
-    if (tp->ipclass)
-        ts = ntohl(iph->saddr);
+    SrcDst sd(proto, saddr, sport, daddr, dport);
 
     pthread_mutex_lock(&tp->m_mutex);
 
-    switch (ts & 3) {
-    case 0:
+    std::map<SrcDst,FlowData> *fmap;
+    switch (ts & INET_ECN_MASK) {
+    case INET_ECN_NOT_ECT:
         tp->db1->tot_packets_nonecn++;
         tp->db1->qs.ecn00[qdelay_encoded]++;
         tp->db1->d_qs.ecn00[qdelay_encoded]+= drops;
         fmap = &tp->db1->fm.nonecn_rate;
         break;
-    case 1:
+    case INET_ECN_ECT_1:
         tp->db1->tot_packets_ecn++;
         tp->db1->qs.ecn01[qdelay_encoded]++;
         tp->db1->d_qs.ecn01[qdelay_encoded]+= drops;
         fmap = &tp->db1->fm.ecn_rate;
         break;
-    case 2:
+    case INET_ECN_ECT_0:
         tp->db1->tot_packets_ecn++;
         tp->db1->qs.ecn10[qdelay_encoded]++;
         tp->db1->d_qs.ecn10[qdelay_encoded]+= drops;
         fmap = &tp->db1->fm.ecn_rate;
         break;
-    case 3:
+    case INET_ECN_CE:
         tp->db1->tot_packets_ecn++;
         tp->db1->qs.ecn11[qdelay_encoded]++;
         tp->db1->d_qs.ecn11[qdelay_encoded]+= drops;
         fmap = &tp->db1->fm.ecn_rate;
         break;
     }
-
-    std::pair<std::map<SrcDst,FlowData>::iterator,bool> ret;
-    ret = fmap->insert(std::pair<SrcDst,FlowData>(sd, FlowData((uint64_t)iplen, (uint32_t)drops, mark)));
-    if (ret.second == false)
-        fmap->at(sd).update(iplen, drops, mark);
-
+    auto ret = fmap->insert(
+        std::pair<SrcDst,FlowData>(sd, FlowData(bitlen, drops, mark)));
+    if (ret.second == false) /* We already have entries for that flow */
+        fmap->at(sd).update(bitlen, drops, mark);
     tp->packets_captured++;
+
     pthread_mutex_unlock(&tp->m_mutex);
 }
 
@@ -220,8 +267,10 @@ std::string getProtoRepr(uint8_t proto) {
 
 void printStreamInfo(SrcDst sd)
 {
-    std::cout << getProtoRepr(sd.m_proto) << " " << IPtoString(sd.m_srcip) << ":" << sd.m_srcport << " -> ";
-    std::cout << IPtoString(sd.m_dstip) << ":" << sd.m_dstport;
+    std::cout
+	    << getProtoRepr(sd.m_proto) << " "
+	    << IPtoString(sd.m_srcip) << ":" << sd.m_srcport << " -> "
+	    << IPtoString(sd.m_dstip) << ":" << sd.m_dstport;
 }
 
 int setup_pcap(ThreadParam *param, const char *dev, std::string &pcapfilter)
@@ -246,12 +295,14 @@ int setup_pcap(ThreadParam *param, const char *dev, std::string &pcapfilter)
     }
 
     if (pcap_compile(param->m_descr, &fp, pcapfilter.c_str(), 0, net) == -1) {
-        fprintf(stderr, "Couldn't parse filter: %s\n", pcap_geterr(param->m_descr));
+        fprintf(stderr, "Couldn't parse filter: %s\n",
+		pcap_geterr(param->m_descr));
         return(2);
     }
 
     if (pcap_setfilter(param->m_descr, &fp) == -1) {
-        fprintf(stderr, "Couldn't install filter: %s\n", pcap_geterr(param->m_descr));
+        fprintf(stderr, "Couldn't install filter: %s\n",
+		pcap_geterr(param->m_descr));
         return(2);
     }
     return 0;
@@ -308,20 +359,23 @@ void *pcapLoop(void *)
     return 0;
 }
 
-void addFlow(std::map<SrcDst,std::vector<FlowData>> *fd_pf, SrcDst srcdst, FlowData fd) {
+void addFlow(std::map<SrcDst,std::vector<FlowData>> *fd_pf, SrcDst srcdst,
+	     FlowData fd) {
     uint64_t samplelen = tp->db2->last - tp->db2->start;
-    uint64_t r = fd.rate * 1000000 / samplelen;
+    double r = fd.rate * 1000000.0 / samplelen;
 
     if (!tp->quiet) {
       printStreamInfo(srcdst);
-      printf(" %lu bits/sec\n", r);
+      printf(" %lu bits/sec\n", (uint64_t)r);
     }
 
-    if (srcdst.m_proto == IPPROTO_TCP || srcdst.m_proto == IPPROTO_UDP || srcdst.m_proto == IPPROTO_ICMP) {
+    if (srcdst.m_proto == IPPROTO_TCP || srcdst.m_proto == IPPROTO_UDP ||
+	srcdst.m_proto == IPPROTO_ICMP) {
         if (fd_pf->count(srcdst) == 0) {
             std::vector<FlowData> data;
             data.resize(tp->sample_id);
-            fd_pf->insert(std::pair<SrcDst,std::vector<FlowData>>(srcdst, data));
+            fd_pf->insert(
+		std::pair<SrcDst,std::vector<FlowData>>(srcdst, data));
         }
 
         if (fd_pf->at(srcdst).size() != tp->sample_id) {
@@ -484,7 +538,8 @@ void *printInfo(void *)
         f_queue_drops_ecn11 << time_ms;
 
         for (int i = 0; i < QS_LIMIT; ++i) {
-            if (tp->db2->qs.ecn00[i] > 0 || tp->db2->qs.ecn01[i] > 0 || tp->db2->qs.ecn10[i] > 0 || tp->db2->qs.ecn11[i] > 0) {
+            if (tp->db2->qs.ecn00[i] > 0 || tp->db2->qs.ecn01[i] > 0 ||
+		tp->db2->qs.ecn10[i] > 0 || tp->db2->qs.ecn11[i] > 0) {
                 // TODO: can we make it less verbose? e.g. group by some intervals?
                 printf("%9.3f:  %8d %8d %8d %8d\n",
                     (double) tp->qdelay_decode_table[i] / 1000,
@@ -523,8 +578,8 @@ void *printInfo(void *)
 
         processFD();
 
-        uint64_t rate_ecn = 0;
-        uint64_t rate_nonecn = 0;
+        double rate_ecn = 0;
+        double rate_nonecn = 0;
         uint64_t drops_ecn = 0;
         uint64_t drops_nonecn = 0;
         uint64_t marks_ecn = 0;
@@ -559,9 +614,11 @@ void *printInfo(void *)
         f_packets_ecn << tp->db2->tot_packets_ecn << std::endl;
         f_packets_nonecn << tp->db2->tot_packets_nonecn << std::endl;
 
-        tp->packets_processed += tp->db2->tot_packets_nonecn + tp->db2->tot_packets_ecn;
+        tp->packets_processed += tp->db2->tot_packets_nonecn +
+		tp->db2->tot_packets_ecn;
 
-        printf("Total throughput: %lu bits/sec\n", (rate_nonecn + rate_ecn));
+        printf("Total throughput: %lu bits/sec\n",
+	       (uint64_t)(rate_nonecn + rate_ecn));
 
         printf("--- END SAMPLE # %d", (int) tp->sample_id + 1);
         if (tp->m_nrs != 0) {
@@ -577,12 +634,14 @@ void *printInfo(void *)
         tp->db2->init(); // init outside the critical area to save time
 
         elapsed = getStamp() - tp->start;
-        next = ((uint64_t) tp->sample_id + 2) * tp->m_sinterval * 1000; // convert ms to us
+        next = ((uint64_t) tp->sample_id + 2) *
+		tp->m_sinterval * 1000; // convert ms to us
 
         int process_time = getStamp() - tp->db2->last;
         if (elapsed < next) {
             uint64_t sleeptime = next - elapsed;
-            printf("Processed data in approx. %d us - sleeping for %d us\n", (int) process_time, (int) sleeptime);
+            printf("Processed data in approx. %d us - sleeping for %d us\n",
+		   (int) process_time, (int) sleeptime);
             wait(sleeptime * NSEC_PER_US);
         }
 
@@ -665,11 +724,19 @@ void *printInfo(void *)
     std::ofstream f_flows_nonecn; openFileW(f_flows_nonecn, tp->m_folder + "/flows_nonecn");
 
     for (auto const& kv: tp->fd_pf_ecn) {
-        f_flows_ecn << getProtoRepr(kv.first.m_proto) << " " << IPtoString(kv.first.m_srcip) << " " << kv.first.m_srcport << " " << IPtoString(kv.first.m_dstip) << " " << kv.first.m_dstport << std::endl;
+        f_flows_ecn << getProtoRepr(kv.first.m_proto) << " "
+		<< IPtoString(kv.first.m_srcip) << " "
+		<< kv.first.m_srcport << " "
+		<< IPtoString(kv.first.m_dstip) << " "
+		<< kv.first.m_dstport << std::endl;
     }
 
     for (auto const& kv: tp->fd_pf_nonecn) {
-        f_flows_nonecn << getProtoRepr(kv.first.m_proto) << " " << IPtoString(kv.first.m_srcip) << " " << kv.first.m_srcport << " " << IPtoString(kv.first.m_dstip) << " " << kv.first.m_dstport << std::endl;
+        f_flows_nonecn << getProtoRepr(kv.first.m_proto) << " "
+		<< IPtoString(kv.first.m_srcip) << " "
+		<< kv.first.m_srcport << " "
+		<< IPtoString(kv.first.m_dstip) << " "
+		<< kv.first.m_dstport << std::endl;
     }
 
     f_flows_ecn.close();

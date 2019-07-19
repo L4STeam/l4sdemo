@@ -26,7 +26,7 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
 		    res_path("/sh/wb_dctcp.sh ").c_str(),
 		    res_path("/sh/rtt_dctcp.sh").c_str(),
 		    res_path("/sh/cc_dctcp.sh").c_str(),
-		    /* res_path("/sh/al_dctcp.sh").c_str(), */
+		    res_path("/sh/al_dctcp.sh").c_str(),
 		    res_path("/sh/cbr_dctcp.sh").c_str(),
 		    Qt::blue, 0);
     Client *cubicclient = new Client(this,
@@ -35,7 +35,7 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
 		    res_path("/sh/wb_cubic.sh ").c_str(),
 		    res_path("/sh/rtt_cubic.sh").c_str(),
 		    res_path("/sh/cc_cubic.sh").c_str(),
-		    /* res_path("/sh/al_cubic.sh").c_str(), */
+		    res_path("/sh/al_cubic.sh").c_str(),
 		    res_path("/sh/cbr_cubic.sh").c_str(),
 		    QColor(255, 157, 0), 1);
 

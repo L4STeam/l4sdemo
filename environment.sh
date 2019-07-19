@@ -5,12 +5,12 @@ export IFACE="ens3"
 # The interface facing the servers
 export REV_IFACE="ens2"
 # The IP prefix of the servers
-export SRC_NET="192.168.100.0/24"
+export SRC_NET="192.168.10.0/24"
 # Client and servers addresses
-export SERVER_A="192.168.100.115"
-export SERVER_B="192.168.100.114"
-export CLIENT_A="192.168.200.117"
-export CLIENT_B="192.168.200.116"
+export SERVER_A="192.168.10.115"
+export SERVER_B="192.168.10.114"
+export CLIENT_A="192.168.20.217"
+export CLIENT_B="192.168.20.216"
 # The interface on both clients connected to the aqm/router (to apply mixed rtt)
 export CLIENT_A_IFACE="eth0"
 export CLIENT_B_IFACE="eth0"
@@ -31,11 +31,12 @@ if [ -x "environment.local" ]; then
 fi
 
 if [ -f "${SSH_KEY}" ]; then
-    eval $(ssh-agent -s)
-    ssh-add "${SSH_KEY}"
+    if ! ps -p $SSH_AGENT_PID > /dev/null; then
+        eval $(ssh-agent -s)
+        ssh-add "${SSH_KEY}"
+    fi
 fi
 
 # The following variables should be good as-is
-export PCAPFILTER="ip and src net $SRC_NET"
+export PCAPFILTER="(vlan and ip and src net $SRC_NET) or (ip and src net $SRC_NET)"
 export AQMNODE=$(ip -4 address show dev $IFACE | awk -F '[ /]' '/inet/ { print $6; exit 0 }')
-

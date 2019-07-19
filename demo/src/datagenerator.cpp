@@ -145,7 +145,7 @@ void DataGenerator::setIPClass(bool toggled)
 void DataGenerator::updateLinkCap(int linkcap)
 {
      pthread_mutex_lock(&demo_data->mutex);
-     demo_data->linkcap = (double)linkcap * 1000000 / 8;
+     demo_data->linkcap = (double)linkcap * 1000000.0;
      pthread_mutex_unlock(&demo_data->mutex);
 }
 

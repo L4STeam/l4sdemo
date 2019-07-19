@@ -28,7 +28,7 @@ public:
     explicit Client(QWidget *parent, const char* download_path,
 		    const char* killall_path, const char* wb_path,
 		    const char* rtt_path, const char* cc_path,
-		    /* const char* al_path, */
+		    const char* al_path,
 		    const char* cbr_path,
 		    const QColor &color = Qt::blue, int init_cc=0);
     ~Client();
@@ -55,7 +55,7 @@ private slots:
     void clearComplData();
     void setComplHS(bool value);
     void setComplWOHS(bool value);
-    /* void updateAL(bool value); */
+    void updateAL(bool value);
     void updateCBR(int value);
     void updateLinkCap(int value);
     void updateCC(int value);
@@ -73,25 +73,24 @@ private:
 
 
     int linkcap;
-    QMutex linkcapMutex;
 
     QwtText lbl;
     QLabel *displayNumDownloads;
     NoScaleDraw *noScaleDraw;
-    /* NoScaleDraw *noScaleDrawAL; */
+    NoScaleDraw *noScaleDrawAL;
     NoScaleDraw *noScaleDrawCBR;
 
     UnrelatedNumberScaleDraw  *unrelatedNumberScaleDraw;
     QVector< QVector< double > > samples;
-    /* QVector< double > sampleAL; */
+    QVector< double > sampleAL;
     QVector< double > sampleCBR;
 
 
     QwtPlot *plotWidget;
-    /* QwtPlot *plotWidgetAL; */
+    QwtPlot *plotWidgetAL;
     QwtPlot *plotWidgetCBR;
     QwtPlotMultiBarChart *barChart;
-    /* QwtPlotBarChart *ALAppChart; */
+    QwtPlotBarChart *ALAppChart;
     QwtPlotBarChart *CBRAppChart;
 
 
@@ -113,7 +112,7 @@ private:
     std::string ssh_download;
     std::string ssh_wb;
     std::string ssh_rtt;
-    /* std::string ssh_al; */
+    std::string ssh_al;
     std::string ssh_cbr;
     std::string ssh_cc;
 
@@ -131,7 +130,7 @@ private:
     std::vector<int> cbrValues;
     std::vector<std::string> ccValues;
 
-    /* QCheckBox *alCheckb; */
+    QCheckBox *alCheckb;
 
     QRadioButton *btnwb0;
     QRadioButton *btnwb10;

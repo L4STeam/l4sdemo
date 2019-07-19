@@ -16,7 +16,7 @@ signals:
     void dataReady();
 private:
     void getQSStat();
-    void calcWindow(std::vector<double> *th, std::vector<double> *w, double rtt);
+    void calcWindow(std::vector<double> &th, std::vector<double> &w, double rtt);
     void getRateDropMarkStat();
 
     ThreadParam* tp;

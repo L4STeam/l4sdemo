@@ -50,27 +50,27 @@ public:
 
 struct FlowData {
 public:
-    FlowData(uint64_t r, uint32_t d, uint32_t m) {
+    FlowData(double r, uint32_t d, uint32_t m) {
         rate = r;
         drops = d;
         marks = m;
     }
 
-    FlowData() : rate(0), drops(0), marks(0) {}
+    FlowData() : FlowData(0.0, 0, 0) {}
 
-    void update(uint32_t r, uint32_t d, uint32_t m) {
+    void update(double r, uint32_t d, uint32_t m) {
         rate += r;
         drops += d;
         marks += m;
     }
 
     void clear() {
-        rate = 0;
+        rate = 0.0;
         drops = 0;
         marks = 0;
     }
 
-    uint64_t rate;
+    double rate;
     uint32_t drops;
     uint32_t marks;
 
