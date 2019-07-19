@@ -35,7 +35,8 @@ struct tc_dualpi2_xstats {
 	__u32 packets_in_c;	/* number of packets enqueued in C queue */
 	__u32 packets_in_l;	/* number of packets enqueued in L queue */
 	__u32 maxq;             /* maximum queue size */
-	__u32 ecn_mark;         /* packets marked with ecn*/
+	__u32 ecn_mark;         /* packets marked with ecn */
+	__u32 step_marks;	/* ECN marks due to the step AQM */
 };
 
 

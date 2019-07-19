@@ -24,4 +24,8 @@ void qdisc_tree_decrease_qlen(struct Qdisc *sch,
 				: qdisc_tree_decrease_qlen(_a,_b))
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 9, 0)
+#define __qdisc_dequeue_head(x) __skb_dequeue(x)
+#endif
+
 #endif

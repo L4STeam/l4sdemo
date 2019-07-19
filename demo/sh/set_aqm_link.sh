@@ -9,11 +9,6 @@ HERE=$(realpath $(dirname $0))
 aqm=$1
 rate=$2
 brtt=$3
-iface=$IFACE
-DCTCPSERVER=$SERVER_A
-RENOSERVER=$SERVER_B
-DCTCPCLIENT=$CLIENT_A
-RENOCLIENT=$CLIENT_B
 
 do_tc() {
 	local cmd="sudo ${HERE}/../../iproute2-l4s/tc/tc $1"
@@ -26,17 +21,17 @@ __set_aqm() {
 	aqmpars="$2"
 
 	echo "# setting $aqmname2 $aqmpars"
-	do_tc "qdisc del dev $iface root"
-	do_tc "qdisc add dev $iface root handle 1: htb default 5"
-	do_tc "class add dev $iface parent 1: classid 1:5 htb rate 400Mbit"
-	do_tc "class add dev $iface parent 1: classid 1:10 htb rate ${rate}Mbit ceil ${rate}Mbit burst 64k cburst 64k"
-	do_tc "filter add dev $iface protocol ip parent 1:0 prio 1 u32 match ip src ${DCTCPSERVER}/24 flowid 1:10"
+	do_tc "qdisc del dev $IFACE root"
+	do_tc "qdisc add dev $IFACE root handle 1: htb default 5"
+	do_tc "class add dev $IFACE parent 1: classid 1:5 htb rate 400Mbit"
+	do_tc "class add dev $IFACE parent 1: classid 1:10 htb rate ${rate}Mbit ceil ${rate}Mbit burst 64k cburst 64k"
+	do_tc "filter add dev $IFACE protocol ip parent 1:0 prio 1 u32 match ip src ${SRC_NET} flowid 1:10"
 
 	#set extra rtt
     do_tc "qdisc del dev ${REV_IFACE} root"
     do_tc "qdisc add dev ${REV_IFACE} root netem delay ${brtt}.0ms limit 40000"
 
-	do_tc "qdisc add dev $iface parent 1:10 $aqmname2 $aqmpars"
+	do_tc "qdisc add dev $IFACE parent 1:10 $aqmname2 $aqmpars"
 
 	do_tc "qdisc show"
 }

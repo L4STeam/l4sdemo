@@ -392,8 +392,9 @@ static int dualpi2_print_xstats(struct qdisc_util *qu, FILE *f,
 	st = RTA_DATA(xstats);
 	fprintf(f, "prob %f delay_c %uus delay_l %uus\n",
 		(double)st->prob / (double)MAX_PROB, st->delay_c, st->delay_l);
-	fprintf(f, "pkts_in_c %u pkts_in_l %u maxq %u ecn_mark %u\n",
-		st->packets_in_c, st->packets_in_l, st->maxq, st->ecn_mark);
+	fprintf(f, "pkts_in_c %u pkts_in_l %u maxq %u\n",
+		st->packets_in_c, st->packets_in_l, st->maxq);
+	fprintf(f, "ecn_mark %u step_marks %u\n", st->ecn_mark, st->step_marks);
 	fprintf(f, "credit %d (%c)\n", st->credit, st->credit > 0 ? 'C' : 'L');
 	return 0;
 

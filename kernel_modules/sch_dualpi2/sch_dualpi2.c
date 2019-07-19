@@ -78,11 +78,14 @@ struct dualpi2_sched_data {
 	/* Statistics */
 	u64	qdelay_c;	/* Classic Q delay */
 	u64	qdelay_l;	/* L4S Q delay */
-	u32	packets_in_c;	/* number of packets enqueued in C queue */
-	u32	packets_in_l;	/* number of packets enqueued in L queue */
+	u32	packets_in_c;	/* Number of packets enqueued in C queue */
+	u32	packets_in_l;	/* Number of packets enqueued in L queue */
 	u32	maxq;		/* maximum queue size */
 	u32	ecn_mark;	/* packets marked with ECN */
+	u32	step_marks;	/* ECN marks due to the step AQM */
+#ifdef IS_TESTBED
 	struct testbed_metrics testbed;
+#endif
 
 	struct { /* Deferred drop statistics */
 		u32 cnt;	/* Packets dropped */
@@ -92,9 +95,9 @@ struct dualpi2_sched_data {
 
 struct dualpi2_skb_cb {
 	u64 ts;		/* Timestamp at enqueue */
-	u8 apply_step:1,/* Whether to apply the step theshold to that packet */
-	   l4s:7;	/* Packet has been classified as L4S */
-	u8 ecn;		/* ECN codepoint */
+	u8 apply_step:1,/* Can we apply the step threshold (if l4444*/
+	   l4s:1,	/* Packet has been classified as L4S */
+	   ect:2;	/* Packet ECT codepoint */
 };
 
 static inline struct dualpi2_skb_cb *dualpi2_skb_cb(struct sk_buff *skb)
@@ -200,7 +203,7 @@ static bool must_drop(struct Qdisc *sch, struct dualpi2_sched_data *q,
 	 * Force drops for ECN-capable traffic on overload.
 	 */
 	} else if (dualpi2_squared_roll(q)) {
-		if (dualpi2_skb_cb(skb)->ecn &&
+		if (dualpi2_skb_cb(skb)->ect &&
 		    !dualpi2_is_overloaded(local_l_prob))
 			goto mark;
 		else
@@ -213,8 +216,9 @@ mark:
 	return false;
 
 drop:
+#ifdef IS_TESTBED
 	testbed_inc_drop_count(&q->testbed, skb);
-
+#endif
 	return true;
 }
 
@@ -231,7 +235,7 @@ static void dualpi2_skb_classify(struct dualpi2_sched_data *q,
 		    skb_try_make_writable(skb, wlen))
 			goto not_ecn;
 
-		cb->ecn = ipv4_get_dsfield(ip_hdr(skb)) & INET_ECN_MASK;
+		cb->ect = ipv4_get_dsfield(ip_hdr(skb)) & INET_ECN_MASK;
 		break;
 	case htons(ETH_P_IPV6):
 		wlen += sizeof(struct ipv6hdr);
@@ -239,19 +243,19 @@ static void dualpi2_skb_classify(struct dualpi2_sched_data *q,
 		    skb_try_make_writable(skb, wlen))
 			goto not_ecn;
 
-		cb->ecn = ipv6_get_dsfield(ipv6_hdr(skb)) & INET_ECN_MASK;
+		cb->ect = ipv6_get_dsfield(ipv6_hdr(skb)) & INET_ECN_MASK;
 		break;
 	default:
 		goto not_ecn;
 	}
-	cb->l4s = cb->ecn & q->ecn_mask;
+	cb->l4s = (cb->ect & q->ecn_mask) != 0;
 	return;
 
 not_ecn:
 	/* Not ECN capable or not non pullable/writable packets can only be
 	 * dropped hence go the the classic queue.
 	 */
-	cb->ecn = INET_ECN_NOT_ECT;
+	cb->ect = INET_ECN_NOT_ECT;
 	cb->l4s = 0;
 }
 
@@ -268,7 +272,9 @@ static int dualpi2_qdisc_enqueue(struct sk_buff *skb, struct Qdisc *sch,
 	if (unlikely(qdisc_qlen(sch) >= sch->limit)) {
 		qdisc_qstats_overlimit(sch);
 		err = NET_XMIT_DROP;
+#ifdef IS_TESTBED
 		testbed_inc_drop_count(&q->testbed, skb);
+#endif
 		goto drop;
 	}
 
@@ -286,11 +292,11 @@ static int dualpi2_qdisc_enqueue(struct sk_buff *skb, struct Qdisc *sch,
 		q->maxq = qdisc_qlen(sch);
 
 	if (skb_is_l4s(skb)) {
+		dualpi2_skb_cb(skb)->apply_step = qdisc_qlen(q->l_queue) > 0;
 		/* Keep the overall qdisc stats consistent */
 		++sch->q.qlen;
-		++q->packets_in_l;
 		qdisc_qstats_backlog_inc(sch, skb);
-		dualpi2_skb_cb(skb)->apply_step = qdisc_qlen(q->l_queue) > 0;
+		++q->packets_in_l;
 		return qdisc_enqueue_tail(skb, q->l_queue);
 	}
 	++q->packets_in_c;
@@ -305,26 +311,11 @@ drop:
 	return err;
 }
 
-static inline struct sk_buff *__dequeue_head(struct dualpi2_sched_data *q,
-					     struct Qdisc *sch, s32 weight,
-					     int other_len)
-{
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 9, 0)
-	struct sk_buff *skb = __skb_dequeue(&sch->q);
-#else
-	struct sk_buff *skb = __qdisc_dequeue_head(&sch->q);
-#endif
-
-	if (other_len > 0)
-		q->c_protection.credit += qdisc_pkt_len(skb) * weight;
-	return skb;
-}
-
 static struct sk_buff *dualpi2_qdisc_dequeue(struct Qdisc *sch)
 {
 	struct dualpi2_sched_data *q = qdisc_priv(sch);
 	struct sk_buff *skb;
-	int qlen_c;
+	int qlen_c, credit_change;
 
 pick_packet:
 	/* L queue packets are also accounted for in qdisc_qlen(sch)! */
@@ -336,16 +327,18 @@ pick_packet:
 	if (qdisc_qlen(q->l_queue) > 0 &&
 	    (qlen_c <= 0 || q->c_protection.credit <= 0)) {
 		/* Dequeue and increase the credit by wc if qlen_c != 0 */
-		skb = __dequeue_head(q, q->l_queue, q->c_protection.wc, qlen_c);
+		skb = __qdisc_dequeue_head(&q->l_queue->q);
+		credit_change = qlen_c ?
+			q->c_protection.wc * qdisc_pkt_len(skb) : 0;
 		/* The global backlog will be updated later. */
 		qdisc_qstats_backlog_dec(q->l_queue, skb);
 		/* Propagate the dequeue to the global stats. */
 		--sch->q.qlen;
 	} else if (qlen_c > 0) {
 		/* Dequeue and decrease the credit by wl if qlen_l != 0 */
-		skb = __dequeue_head(q, sch,
-				     (s32)q->c_protection.wl * (-1),
-				     qdisc_qlen(q->l_queue));
+		skb = __qdisc_dequeue_head(&sch->q);
+		credit_change = qdisc_qlen(q->l_queue) ?
+			(s32)(-1) * q->c_protection.wl * qdisc_pkt_len(skb) : 0;
 	} else {
 		dualpi2_reset_c_protection(q);
 		goto exit;
@@ -364,7 +357,7 @@ pick_packet:
 
 	/* Apply the Step AQM to packets coming out of the L queue. */
 	if (skb_is_l4s(skb)) {
-		u32 qdelay = 0;
+		u64 qdelay = 0;
 
 		if (q->step.in_packets)
 			qdelay = qdisc_qlen(q->l_queue);
@@ -375,14 +368,19 @@ pick_packet:
 			qdelay = skb_sojourn_time(skb, ktime_get_ns()) >> 10;
 		/* Apply the step */
 		if (likely(dualpi2_skb_cb(skb)->apply_step) &&
-		    qdelay > q->step.thresh)
+		    qdelay > q->step.thresh) {
 			dualpi2_mark(q, skb);
+			++q->step_marks;
+		}
 		qdisc_bstats_update(q->l_queue, skb);
 	}
 
+	q->c_protection.credit += credit_change;
 	qdisc_bstats_update(sch, skb);
+#ifdef IS_TESTBED
 	testbed_add_metrics(skb, &q->testbed,
-			    (ktime_get_ns() - dualpi2_skb_cb(skb)->ts) >> 10);
+			    skb_sojourn_time(skb, ktime_get_ns()) >> 10);
+#endif
 
 exit:
 	/* We cannot call qdisc_tree_reduce_backlog() if our qlen is 0,
@@ -629,7 +627,9 @@ static void dualpi2_reset_default(struct dualpi2_sched_data *q)
 	q->coupling_factor = 2; /* window fairness for equal RTTs */
 	q->drop_overload = true; /* Preserve latency by dropping on overload */
 	q->drop_early = false; /* PI2 drop on dequeue */
+#ifdef IS_TESTBED
 	testbed_metrics_init(&q->testbed);
+#endif
 }
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 16, 0)
@@ -717,6 +717,7 @@ static int dualpi2_dump_stats(struct Qdisc *sch, struct gnet_dump *d)
 		.maxq		= q->maxq,
 		.ecn_mark	= q->ecn_mark,
 		.credit		= q->c_protection.credit,
+		.step_marks	= q->step_marks,
 	};
 
         do_div(qdelay_c_usec, NSEC_PER_USEC);
@@ -732,6 +733,15 @@ static void dualpi2_reset(struct Qdisc *sch)
 
 	qdisc_reset_queue(sch);
 	qdisc_reset_queue(q->l_queue);
+	q->qdelay_c = 0;
+	q->qdelay_l = 0;
+	q->pi2.prob = 0;
+	q->packets_in_c = 0;
+	q->packets_in_l = 0;
+	q->maxq = 0;
+	q->ecn_mark = 0;
+	q->step_marks = 0;
+	dualpi2_reset_c_protection(q);
 }
 
 static void dualpi2_destroy(struct Qdisc *sch)
