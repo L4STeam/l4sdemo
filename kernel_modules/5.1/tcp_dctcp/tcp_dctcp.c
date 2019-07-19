@@ -101,13 +101,6 @@ static bool __dctcp_init(struct sock *sk)
 	return false;
 }
 
-static void prague_init(struct sock *sk)
-{
-	if (__dctcp_init(sk)) {
-		tcp_sk(sk)->ecn_flags |= TCP_ECN_ECT_1;
-	}
-}
-
 static void dctcp_init(struct sock *sk)
 {
 	__dctcp_init(sk);
@@ -227,11 +220,6 @@ static u32 dctcp_cwnd_undo(struct sock *sk)
 	return max(tcp_sk(sk)->snd_cwnd, ca->loss_cwnd);
 }
 
-static void prague_release(struct sock *sk)
-{
-	tcp_sk(sk)->ecn_flags &= ~TCP_ECN_ECT_1;
-}
-
 static struct tcp_congestion_ops dctcp __read_mostly = {
 	.init		= dctcp_init,
 	.in_ack_event   = dctcp_update_alpha,
@@ -246,22 +234,6 @@ static struct tcp_congestion_ops dctcp __read_mostly = {
 	.name		= "dctcp",
 };
 
-static struct tcp_congestion_ops prague __read_mostly = {
-	.init		= prague_init,
-	.release	= prague_release,
-	.in_ack_event   = dctcp_update_alpha,
-	.cwnd_event	= dctcp_cwnd_event,
-	.ssthresh	= dctcp_ssthresh,
-	.cong_avoid	= tcp_reno_cong_avoid,
-	.undo_cwnd	= dctcp_cwnd_undo,
-	.set_state	= dctcp_state,
-	.get_info	= dctcp_get_info,
-	.flags		= (TCP_CONG_NEEDS_ECN | TCP_CONG_WANTS_ECT_1 |
-			   TCP_CONG_NON_RESTRICTED),
-	.owner		= THIS_MODULE,
-	.name		= "prague",
-};
-
 static struct tcp_congestion_ops dctcp_reno __read_mostly = {
 	.ssthresh	= tcp_reno_ssthresh,
 	.cong_avoid	= tcp_reno_cong_avoid,
@@ -273,18 +245,13 @@ static struct tcp_congestion_ops dctcp_reno __read_mostly = {
 
 static int __init dctcp_register(void)
 {
-	int err;
-
 	BUILD_BUG_ON(sizeof(struct dctcp) > ICSK_CA_PRIV_SIZE);
-	if ((err = tcp_register_congestion_control(&prague)))
-		return err;
 	return tcp_register_congestion_control(&dctcp);
 }
 
 static void __exit dctcp_unregister(void)
 {
 	tcp_unregister_congestion_control(&dctcp);
-	tcp_unregister_congestion_control(&prague);
 }
 
 module_init(dctcp_register);
