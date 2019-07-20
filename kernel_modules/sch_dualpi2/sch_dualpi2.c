@@ -411,11 +411,11 @@ static u32 calculate_probability(struct Qdisc *sch)
 	 * computations,
 	 * i.e, would overflow for queueing delay differences > ~8sec.
 	 */
-	delta = ((s64)(qdelay - q->pi2.target)) * q->pi2.alpha
-		>> ALPHA_BETA_GRANULARITY;
-	delta += ((s64)(qdelay - qdelay_old)) * q->pi2.beta
-		>> ALPHA_BETA_GRANULARITY;
-	new_prob = q->pi2.prob + delta;
+	delta = ((s64)((s64)qdelay - q->pi2.target) * q->pi2.alpha)
+		/ ((1 << (ALPHA_BETA_GRANULARITY + 1)) - 1);
+	delta += ((s64)((s64)qdelay - qdelay_old) * q->pi2.beta)
+		/ ((1 << (ALPHA_BETA_GRANULARITY + 1)) - 1);
+	new_prob = (s64)delta + q->pi2.prob;
 	/* Prevent overflow */
 	if (delta > 0) {
 		if (new_prob < q->pi2.prob)
@@ -588,12 +588,7 @@ static int dualpi2_change(struct Qdisc *sch, struct nlattr *opt,
 	/* Drop excess packets if new limit is lower */
 	old_qlen = qdisc_qlen(sch);
 	while (qdisc_qlen(sch) > sch->limit) {
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 9, 0)
-		struct sk_buff *skb = __skb_dequeue(&sch->q);
-#else
 		struct sk_buff *skb = __qdisc_dequeue_head(&sch->q);
-
-#endif
 		dropped += qdisc_pkt_len(skb);
 		qdisc_qstats_backlog_dec(sch, skb);
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
