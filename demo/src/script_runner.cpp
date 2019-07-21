@@ -60,13 +60,16 @@ void ScriptRunner::run_script(std::string path)
 void ScriptRunner::run_loop()
 {
 	while (alive || !q.empty()) {
-		std::unique_lock<std::mutex> lock(q_mutex);
-		while (q.empty()) {
-			q_cond.wait(lock);
-			if (!alive && q.empty())
-				return;
+		std::string script;
+		{
+			std::unique_lock<std::mutex> lock(q_mutex);
+			while (q.empty()) {
+				q_cond.wait(lock);
+				if (!alive && q.empty())
+					return;
+			}
+			script = q.front();
 		}
-		std::string script = q.front();
 		q.pop();
 		exec_script(script);
 	}

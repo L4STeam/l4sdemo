@@ -365,7 +365,8 @@ pick_packet:
 			/* Only apply time-based if the packet causes a queue.
 			 * Convert in us.
 			 */
-			qdelay = skb_sojourn_time(skb, ktime_get_ns()) >> 10;
+			qdelay = skb_sojourn_time(skb, ktime_get_ns())
+				/ NSEC_PER_US;
 		/* Apply the step */
 		if (likely(dualpi2_skb_cb(skb)->apply_step) &&
 		    qdelay > q->step.thresh) {
