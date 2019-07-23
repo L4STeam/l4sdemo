@@ -36,7 +36,6 @@ function set_tcp_cc()
 
     do_ssh $ip "sudo sysctl -w net.ipv4.tcp_congestion_control=$tcp_cc"
     do_ssh $ip "sudo sysctl -w net.ipv4.tcp_ecn=$ecn_cc"
-    do_ssh $ip 'sudo service ssh restart'
 }
 
 set_tcp_cc "$SERVER" "$cc"
