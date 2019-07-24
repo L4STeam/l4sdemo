@@ -31,7 +31,7 @@
 #include <sys/time.h>
 #include <arpa/inet.h>
 
-#define BUFFER_SIZE 80000
+#define BUFFER_SIZE 1448
 
 
 void error(char *msg)

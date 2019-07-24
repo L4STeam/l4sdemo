@@ -19,19 +19,17 @@
 #include <errno.h>
 #include <strings.h>
 
-char buffer[50000]; // the send buffer, everyone can share as it is read only
+char buffer[1448]; /* Typical MSS on ethernet*/
 
 
 
 void send_to_socket(int cur_sock){
 
     int err;
-	int transmit_bytes;
 
     while(1){
 
-      transmit_bytes = 50000;
-      if((err = send(cur_sock, buffer, transmit_bytes, 0)) < 0){
+      if((err = send(cur_sock, buffer, sizeof(buffer), 0)) < 0){
 
           if( err == -1 || err == 0 )
           {
@@ -112,9 +110,8 @@ int create_listen_socket(int port){
 */
 int main(int argc, char *argv[]){
 
-  /* Initialize the send buffer with 50000 'q'-characters to transmit */
   int j;
-   for (j = 0; j<50000;j++){
+   for (j = 0; j < sizeof(buffer);j++){
         buffer[j] = 'q';
   }
 
