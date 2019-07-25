@@ -24,7 +24,7 @@ __set_aqm() {
 	do_tc "qdisc del dev $IFACE root"
 	do_tc "qdisc add dev $IFACE root handle 1: htb default 5"
 	do_tc "class add dev $IFACE parent 1: classid 1:5 htb rate 1Mbit"
-	do_tc "class add dev $IFACE parent 1: classid 1:10 htb rate ${rate}Mbit ceil ${rate}Mbit burst 64k cburst 64k"
+	do_tc "class add dev $IFACE parent 1: classid 1:10 htb rate ${rate}Mbit ceil ${rate}Mbit burst 1514 cburst 1514"
 	do_tc "filter add dev $IFACE protocol ip parent 1:0 prio 1 u32 match ip src ${SRC_NET} flowid 1:10"
 
 	#set extra rtt
