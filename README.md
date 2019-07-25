@@ -5,8 +5,8 @@ This repository contains a set of tools to perform graphical evaluation of diffe
 testbed consisting of 5 nodes - 1 AQM node, 2 clients and 2 servers. This setup is a requirement for all the tools to work.
 
 The testbed can be provisionned using two scripts:
-- setup_testbed.sh should be run on the AQM node
-- setup_endhosts.sh will provision the clients and servers
+1. setup_testbed.sh should be run on the AQM node
+2. setup_endhosts.sh will provision the clients and servers
 
 Both scripts assume that:
 - some environment variables are set which describe the settings. Those are listed in the environment.sh
