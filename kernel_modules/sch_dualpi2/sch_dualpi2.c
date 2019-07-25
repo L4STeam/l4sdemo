@@ -366,7 +366,7 @@ pick_packet:
 			 * Convert in us.
 			 */
 			qdelay = skb_sojourn_time(skb, ktime_get_ns())
-				/ NSEC_PER_US;
+				/ NSEC_PER_USEC;
 		/* Apply the step */
 		if (likely(dualpi2_skb_cb(skb)->apply_step) &&
 		    qdelay > q->step.thresh) {
