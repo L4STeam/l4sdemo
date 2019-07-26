@@ -3,5 +3,8 @@ Cubic : cubic
 Cubic ECN : cubic_ecn
 Reno : reno
 BBR : bbr
+BBR ECN : bbr_ecn
+BBRv2 : bbr2
+BBRv2 ECN : bbr2_ecn
 Prague : prague
 Prague CWR fallback : prague_cwr

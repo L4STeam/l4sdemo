@@ -24,6 +24,10 @@ function set_tcp_cc()
         tcp_cc='bbr'
         ecn_cc='1'
         ;;
+    bbr2_ecn)
+        tcp_cc='bbr2'
+        ecn_cc='1'
+        ;;
     prague)
         # Enable AccECN
         ecn_cc='3'
@@ -36,6 +40,13 @@ function set_tcp_cc()
 
     do_ssh $ip "sudo sysctl -w net.ipv4.tcp_congestion_control=$tcp_cc"
     do_ssh $ip "sudo sysctl -w net.ipv4.tcp_ecn=$ecn_cc"
+
+    case "$tcp_cc" in
+    bbr2_ecn)
+    do_ssh $ip "bash -c 'echo 1 > /sys/module/tcp_bbr2/parameters/ecn_enable'"
+    do_ssh $ip "bash -c 'echo 0 > /sys/module/tcp_bbr2/parameters/ecn_max_rtt_us'"
+        ;;
+    esac
 }
 
 set_tcp_cc "$SERVER" "$cc"
