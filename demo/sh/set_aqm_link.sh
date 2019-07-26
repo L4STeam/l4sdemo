@@ -39,7 +39,12 @@ __set_aqm() {
 set_taildrop() {
     local delay=$1
     # the limit is in bytes
-    set_aqm taildrop "limit $((rate * 1000000 / delay / 1000 / 8))b"
+    __set_aqm taildrop "limit $((rate * 1000000 * delay / 1000 / 8))b"
+}
+
+set_taildrop_pkt() {
+    local cnt=$1
+    __set_aqm taildrop "limit $((cnt * 1514))b"
 }
 
 set_aqm() {
@@ -64,6 +69,16 @@ elif [[ $aqm == "td_100" ]]; then
         set_taildrop 100  
 elif [[ $aqm == "td_200" ]]; then
         set_taildrop 200  
+elif [[ $aqm == "td_5pkt" ]]; then
+        set_taildrop_pkt 5
+elif [[ $aqm == "td_10pkt" ]]; then
+        set_taildrop_pkt 10
+elif [[ $aqm == "td_20pkt" ]]; then
+        set_taildrop_pkt 20
+elif [[ $aqm == "td_100pkt" ]]; then
+        set_taildrop_pkt 100
+elif [[ $aqm == "td_1000pkt" ]]; then
+        set_taildrop_pkt 1000
 elif [[ $aqm == "pie" ]]; then
         set_aqm pie "ecn"  
 elif [[ $aqm == "pie_40" ]]; then

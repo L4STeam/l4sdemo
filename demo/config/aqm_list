@@ -2,11 +2,6 @@ DualPI2-rc DCTCP : dpi2_dc
 DualPI2-dev DCTCP : dpi2_dev_dc
 DualPI2-rc Prague : dpi2
 DualPI2-dev Prague : dpi2_dev
-Taildrop 10ms : td_10
-Taildrop 20ms : td_20
-Taildrop 50ms : td_40
-Taildrop 100ms : td_100
-Taildrop 200ms : td_200
 PIE : pie
 PIE 40ms : pie_40
 PIE 10ms : pie_10
@@ -16,3 +11,13 @@ FQ Codel : fqcodel
 FQ Codel CE 1 : fqcodel_ce1
 FQ Codel CE 2 : fqcodel_ce2
 RED : red
+Taildrop 10ms : td_10
+Taildrop 20ms : td_20
+Taildrop 50ms : td_50
+Taildrop 100ms : td_100
+Taildrop 200ms : td_200
+Taildrop 5pkt : td_5pkt
+Taildrop 10pkt : td_10pkt
+Taildrop 20pkt : td_20pkt
+Taildrop 100pkt : td_100pkt
+Taildrop 1000pkt : td_1000pkt
