@@ -13,7 +13,7 @@ export EXTRA_CFLAGS+="-I. -I ${HERE}/common -DIS_TESTBED=1"
 sudo tc qdisc del root dev $IFACE || true
 
 mod_dir=${HERE}/kernel_modules/${REV}
-if [ -d $mod_dir ]; then
+if [ ! -d $mod_dir ]; then
     echo ""
     echo "Cannot find kernel modules matching the running kernel!"
     exit 1
