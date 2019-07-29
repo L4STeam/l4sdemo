@@ -82,7 +82,7 @@ struct dualpi2_sched_data {
 	u32	packets_in_l;	/* Number of packets enqueued in L queue */
 	u32	maxq;		/* maximum queue size */
 	u32	ecn_mark;	/* packets marked with ECN */
-	u32	step_marks;	/* ECN marks due to the step AQM */
+	u32 	step_marks; 	/* ECN marks due to the step AQM */
 #ifdef IS_TESTBED
 	struct testbed_metrics testbed;
 #endif
@@ -259,12 +259,8 @@ not_ecn:
 	cb->l4s = 0;
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
-static int dualpi2_qdisc_enqueue(struct sk_buff *skb, struct Qdisc *sch)
-#else
 static int dualpi2_qdisc_enqueue(struct sk_buff *skb, struct Qdisc *sch,
 				 struct sk_buff **to_free)
-#endif
 {
 	struct dualpi2_sched_data *q = qdisc_priv(sch);
 	int err;
@@ -292,7 +288,8 @@ static int dualpi2_qdisc_enqueue(struct sk_buff *skb, struct Qdisc *sch,
 		q->maxq = qdisc_qlen(sch);
 
 	if (skb_is_l4s(skb)) {
-		dualpi2_skb_cb(skb)->apply_step = qdisc_qlen(q->l_queue) > 0;
+		/* Only apply the step if a queue is building up */
+		dualpi2_skb_cb(skb)->apply_step = qdisc_qlen(q->l_queue) > 1;
 		/* Keep the overall qdisc stats consistent */
 		++sch->q.qlen;
 		qdisc_qstats_backlog_inc(sch, skb);
@@ -303,11 +300,8 @@ static int dualpi2_qdisc_enqueue(struct sk_buff *skb, struct Qdisc *sch,
 	return qdisc_enqueue_tail(skb, sch);
 
 drop:
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
-	qdisc_drop(skb, sch);
-#else
 	qdisc_drop(skb, sch, to_free);
-#endif
+
 	return err;
 }
 
@@ -328,8 +322,8 @@ pick_packet:
 	    (qlen_c <= 0 || q->c_protection.credit <= 0)) {
 		/* Dequeue and increase the credit by wc if qlen_c != 0 */
 		skb = __qdisc_dequeue_head(&q->l_queue->q);
-		credit_change = qlen_c ?
-			q->c_protection.wc * qdisc_pkt_len(skb) : 0;
+                credit_change = qlen_c ?
+                        q->c_protection.wc * qdisc_pkt_len(skb) : 0;
 		/* The global backlog will be updated later. */
 		qdisc_qstats_backlog_dec(q->l_queue, skb);
 		/* Propagate the dequeue to the global stats. */
@@ -337,8 +331,8 @@ pick_packet:
 	} else if (qlen_c > 0) {
 		/* Dequeue and decrease the credit by wl if qlen_l != 0 */
 		skb = __qdisc_dequeue_head(&sch->q);
-		credit_change = qdisc_qlen(q->l_queue) ?
-			(s32)(-1) * q->c_protection.wl * qdisc_pkt_len(skb) : 0;
+                credit_change = qdisc_qlen(q->l_queue) ?
+                        (s32)(-1) * q->c_protection.wl * qdisc_pkt_len(skb) : 0;
 	} else {
 		dualpi2_reset_c_protection(q);
 		goto exit;
@@ -362,11 +356,7 @@ pick_packet:
 		if (q->step.in_packets)
 			qdelay = qdisc_qlen(q->l_queue);
 		else
-			/* Only apply time-based if the packet causes a queue.
-			 * Convert in us.
-			 */
-			qdelay = skb_sojourn_time(skb, ktime_get_ns())
-				/ NSEC_PER_USEC;
+			qdelay = skb_sojourn_time(skb, ktime_get_ns());
 		/* Apply the step */
 		if (likely(dualpi2_skb_cb(skb)->apply_step) &&
 		    qdelay > q->step.thresh) {
@@ -432,18 +422,11 @@ static u32 calculate_probability(struct Qdisc *sch)
 	return new_prob;
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0)
-static void dualpi2_timer(unsigned long arg)
-{
-	struct Qdisc *sch = (struct Qdisc *)arg;
-	struct dualpi2_sched_data *q = qdisc_priv(sch);
-#else
 static void dualpi2_timer(struct timer_list *timer)
 {
         struct dualpi2_sched_data *q = from_timer(q, timer, pi2.timer);
 	struct Qdisc *sch = q->sch;
-#endif
-	spinlock_t *root_lock; /* spinlock for qdisc parameter update */
+	spinlock_t *root_lock;
 
 	root_lock = qdisc_lock(qdisc_root_sleeping(sch));
 	spin_lock(root_lock);
@@ -469,12 +452,8 @@ static const struct nla_policy dualpi2_policy[TCA_DUALPI2_MAX + 1] = {
 	[TCA_DUALPI2_ECN_MASK] = {.type = NLA_U8},
 };
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 16, 0)
-static int dualpi2_change(struct Qdisc *sch, struct nlattr *opt)
-#else
 static int dualpi2_change(struct Qdisc *sch, struct nlattr *opt,
 			  struct netlink_ext_ack *extack)
-#endif
 {
 	struct dualpi2_sched_data *q = qdisc_priv(sch);
 	struct nlattr *tb[TCA_DUALPI2_MAX + 1];
@@ -483,14 +462,8 @@ static int dualpi2_change(struct Qdisc *sch, struct nlattr *opt,
 
 	if (!opt)
 		return -EINVAL;
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 12, 0)
-	err = nla_parse_nested(tb, TCA_DUALPI2_MAX, opt, dualpi2_policy);
-#elif LINUX_VERSION_CODE < KERNEL_VERSION(4, 16, 0)
-	err = nla_parse_nested(tb, TCA_DUALPI2_MAX, opt, dualpi2_policy, NULL);
-#else
-	err = nla_parse_nested(tb, TCA_DUALPI2_MAX, opt, dualpi2_policy,
-			       extack);
-#endif
+	err = nla_parse_nested_deprecated(tb, TCA_DUALPI2_MAX, opt,
+					  dualpi2_policy, extack);
 	if (err < 0)
 		return err;
 
@@ -500,10 +473,8 @@ static int dualpi2_change(struct Qdisc *sch, struct nlattr *opt,
 		u32 limit = nla_get_u32(tb[TCA_DUALPI2_LIMIT]);
 
 		if (!limit) {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 16, 0)
 			NL_SET_ERR_MSG_ATTR(extack, tb[TCA_DUALPI2_LIMIT],
 				    "limit must be greater than 0 !");
-#endif
 			return -EINVAL;
 		}
 		sch->limit = limit;
@@ -518,10 +489,8 @@ static int dualpi2_change(struct Qdisc *sch, struct nlattr *opt,
 			usecs_to_jiffies(nla_get_u32(tb[TCA_DUALPI2_TUPDATE]));
 
 		if (!tupdate) {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 16, 0)
 			NL_SET_ERR_MSG_ATTR(extack, tb[TCA_DUALPI2_TUPDATE],
-				    "tupdate cannot be 0 jiffies!");
-#endif
+					    "tupdate cannot be 0 jiffies!");
 			return -EINVAL;
 		}
 		q->pi2.tupdate = tupdate;
@@ -531,10 +500,8 @@ static int dualpi2_change(struct Qdisc *sch, struct nlattr *opt,
 		u32 alpha = nla_get_u32(tb[TCA_DUALPI2_ALPHA]);
 
 		if (alpha > ALPHA_BETA_MAX) {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 16, 0)
 			NL_SET_ERR_MSG_ATTR(extack, tb[TCA_DUALPI2_ALPHA],
 					    "alpha is too large!");
-#endif
 			return -EINVAL;
 		}
 		q->pi2.alpha = dualpi2_scale_alpha_beta(alpha);
@@ -544,10 +511,8 @@ static int dualpi2_change(struct Qdisc *sch, struct nlattr *opt,
 		u32 beta = nla_get_u32(tb[TCA_DUALPI2_BETA]);
 
 		if (beta > ALPHA_BETA_MAX) {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 16, 0)
 			NL_SET_ERR_MSG_ATTR(extack, tb[TCA_DUALPI2_BETA],
 					    "beta is too large!");
-#endif
 			return -EINVAL;
 
 		}
@@ -555,7 +520,8 @@ static int dualpi2_change(struct Qdisc *sch, struct nlattr *opt,
 	}
 
 	if (tb[TCA_DUALPI2_STEP_THRESH])
-		q->step.thresh = nla_get_u32(tb[TCA_DUALPI2_STEP_THRESH]);
+		q->step.thresh = nla_get_u32(tb[TCA_DUALPI2_STEP_THRESH]) *
+			NSEC_PER_USEC;
 
 	if (tb[TCA_DUALPI2_COUPLING])
 		q->coupling_factor = nla_get_u8(tb[TCA_DUALPI2_COUPLING]);
@@ -573,11 +539,9 @@ static int dualpi2_change(struct Qdisc *sch, struct nlattr *opt,
 		u8 wc = nla_get_u8(tb[TCA_DUALPI2_C_PROTECTION]);
 
 		if (wc > MAX_WC) {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 16, 0)
 			NL_SET_ERR_MSG_ATTR(extack,
 					    tb[TCA_DUALPI2_C_PROTECTION],
 					    "c_protection must be <= 100!");
-#endif
 			return -EINVAL;
 		}
 		dualpi2_calculate_c_protection(sch, q, wc);
@@ -590,13 +554,10 @@ static int dualpi2_change(struct Qdisc *sch, struct nlattr *opt,
 	old_qlen = qdisc_qlen(sch);
 	while (qdisc_qlen(sch) > sch->limit) {
 		struct sk_buff *skb = __qdisc_dequeue_head(&sch->q);
+
 		dropped += qdisc_pkt_len(skb);
 		qdisc_qstats_backlog_dec(sch, skb);
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
-		qdisc_drop(skb, sch);
-#else
 		rtnl_qdisc_drop(skb, sch);
-#endif
 	}
 	qdisc_tree_reduce_backlog(sch, old_qlen - qdisc_qlen(sch), dropped);
 
@@ -614,7 +575,7 @@ static void dualpi2_reset_default(struct dualpi2_sched_data *q)
 	q->pi2.beta = dualpi2_scale_alpha_beta(819); /* ~3.2 Hz */
 	/* These values give a 10dB stability margin with max_rtt=100ms */
 
-	q->step.thresh = 1 * USEC_PER_MSEC; /* 1ms */
+	q->step.thresh = 1 * NSEC_PER_MSEC; /* 1ms */
 	q->step.in_packets = false; /* Step in time not packets */
 
 	dualpi2_calculate_c_protection(q->sch, q, 10); /* Defaults to wc = 10 */
@@ -628,38 +589,21 @@ static void dualpi2_reset_default(struct dualpi2_sched_data *q)
 #endif
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 16, 0)
-static int dualpi2_init(struct Qdisc *sch, struct nlattr *opt)
-#else
 static int dualpi2_init(struct Qdisc *sch, struct nlattr *opt,
 			struct netlink_ext_ack *extack)
-#endif
 {
 	struct dualpi2_sched_data *q = qdisc_priv(sch);
 	int err;
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 16, 0)
 	if (!(q->l_queue = qdisc_create_dflt(sch->dev_queue, &pfifo_qdisc_ops,
-					     TC_H_MAKE(sch->handle, 1))))
-#else
-	if (!(q->l_queue = qdisc_create_dflt(sch->dev_queue, &pfifo_qdisc_ops,
-	 				     TC_H_MAKE(sch->handle, 1), extack)))
-#endif
+					     TC_H_MAKE(sch->handle, 1), extack)))
 		return -ENOMEM;
 
 	q->sch = sch;
 	dualpi2_reset_default(q);
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0)
-	setup_timer(&q->pi2.timer, dualpi2_timer, (unsigned long)sch);
-#else
         timer_setup(&q->pi2.timer, dualpi2_timer, 0);
-#endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 16, 0)
-	if (opt && (err = dualpi2_change(sch, opt)))
-#else
 	if (opt && (err = dualpi2_change(sch, opt, extack)))
-#endif
 		return err;
 
 	mod_timer(&q->pi2.timer, jiffies + HZ / 2);
@@ -668,14 +612,17 @@ static int dualpi2_init(struct Qdisc *sch, struct nlattr *opt,
 
 static int dualpi2_dump(struct Qdisc *sch, struct sk_buff *skb)
 {
-	struct nlattr *opts = nla_nest_start(skb, TCA_OPTIONS);
+	struct nlattr *opts = nla_nest_start_noflag(skb, TCA_OPTIONS);
 	struct dualpi2_sched_data *q = qdisc_priv(sch);
+	u64 step_thresh = q->step.thresh;
 	u64 target_usec = q->pi2.target;
 
 	if (!opts)
 		goto nla_put_failure;
 
         do_div(target_usec, NSEC_PER_USEC);
+	if (!q->step.in_packets)
+		do_div(step_thresh, NSEC_PER_USEC);
 
 	if (nla_put_u32(skb, TCA_DUALPI2_LIMIT, sch->limit) ||
 	    nla_put_u32(skb, TCA_DUALPI2_TARGET, target_usec) ||
@@ -685,7 +632,7 @@ static int dualpi2_dump(struct Qdisc *sch, struct sk_buff *skb)
 			dualpi2_unscale_alpha_beta(q->pi2.alpha)) ||
 	    nla_put_u32(skb, TCA_DUALPI2_BETA,
 			dualpi2_unscale_alpha_beta(q->pi2.beta)) ||
-	    nla_put_u32(skb, TCA_DUALPI2_STEP_THRESH, q->step.thresh) ||
+	    nla_put_u32(skb, TCA_DUALPI2_STEP_THRESH, step_thresh) ||
 	    nla_put_u8(skb, TCA_DUALPI2_COUPLING, q->coupling_factor) ||
 	    nla_put_u8(skb, TCA_DUALPI2_DROP_OVERLOAD, q->drop_overload) ||
 	    nla_put_u8(skb, TCA_DUALPI2_STEP_PACKETS, q->step.in_packets) ||
@@ -747,11 +694,7 @@ static void dualpi2_destroy(struct Qdisc *sch)
 	q->pi2.tupdate = 0;
 	del_timer_sync(&q->pi2.timer);
 	if (q->l_queue)
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 20, 0)
-		qdisc_destroy(q->l_queue);
-#else
 		qdisc_put(q->l_queue);
-#endif
 }
 
 static struct Qdisc_ops dualpi2_qdisc_ops __read_mostly = {
