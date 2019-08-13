@@ -1,14 +1,5 @@
-/* Copyright (C) 2018 Nokia.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+/* SPDX-License-Identifier: GPL-2.0 */
+/* Copyright (C) 2019 Nokia.
  *
  * DualQ PI Improved with a Square (dualpi2)
  * Supports controlling scalable congestion controls (DCTCP, etc...)
@@ -17,12 +8,6 @@
  * Author: Koen De Schepper <koen.de_schepper@nokia-bell-labs.com>
  * Author: Olga Albisser <olga@albisser.org>
  * Author: Henrik Steen <henrist@henrist.net>
- *
- * Based on the PIE implementation:
- * Copyright (C) 2013 Cisco Systems, Inc, 2013.
- * Author: Vijay Subramanian <vijaynsu@cisco.com>
- * Author: Mythili Prabhu <mysuryan@cisco.com>
- *
  */
 
 #include <stdio.h>
@@ -42,11 +27,9 @@
 
 #define MAX_PROB ((uint32_t)(~((uint32_t)0)))
 #define DEFAULT_ALPHA_BETA ((uint32_t)(~((uint32_t)0)))
-#define ALPHA_BETA_MAX 40000 /* Avoid overflows when computing PI2 probability*/
-#define ALPHA_BETA_MIN 0
+#define ALPHA_BETA_MAX ((2 << 23) - 1) /* see net/sched/sch_dualpi2.c */
 #define ALPHA_BETA_SCALE (1 << 8)
-#define ALPHA_BETA_MIN_ENABLED ((float)1.0 / ALPHA_BETA_SCALE)
-
+#define RTT_TYP_TO_MAX 6
 
 enum {
 	INET_ECN_NOT_ECT = 0,
@@ -74,15 +57,16 @@ static void explain(void)
 	fprintf(stderr, "Usage: ... dualpi2\n");
 	fprintf(stderr, "               [limit PACKETS]\n");
 	fprintf(stderr, "               [coupling_factor NUMBER]\n");
-	fprintf(stderr, "               [target TIME] [tupdate TIME]\n");
-	fprintf(stderr, "               [alpha ALPHA] [beta BETA]\n");
 	fprintf(stderr, "               [step_thresh TIME|PACKETS]\n");
 	fprintf(stderr, "               [drop_on_overload|overflow]\n");
 	fprintf(stderr, "               [drop_enqueue|drop_dequeue]\n");
 	fprintf(stderr, "               [classic_protection PERCENTAGE]\n");
+	fprintf(stderr, "               [max_rtt TIME [typical_rtt TIME]]\n");
+	fprintf(stderr, "               [target TIME] [tupdate TIME]\n");
+	fprintf(stderr, "               [alpha ALPHA] [beta BETA]\n");
 }
 
-static int get_float_in_range(float *val, const char *arg, float min, float max)
+static int get_float(float *val, const char *arg, float min, float max)
 {
         float res;
         char *ptr;
@@ -118,23 +102,18 @@ static int get_packets(uint32_t *val, const char *arg)
 	return 0;
 }
 
-static int parse_alpha_beta(int argc, char **argv, uint32_t *field)
+static int parse_alpha_beta(const char *name, char *argv, uint32_t *field)
 {
 
 	float field_f;
-	char *name = *argv;
 
-	NEXT_ARG();
-	if (get_float_in_range(&field_f, *argv, ALPHA_BETA_MIN,
-			       ALPHA_BETA_MAX)) {
+	if (get_float(&field_f, argv, 0.0, ALPHA_BETA_MAX)) {
 		fprintf(stderr, "Illegal \"%s\"\n", name);
 		return -1;
 	}
-	else if (field_f < ALPHA_BETA_MIN_ENABLED)
-		fprintf(stderr,
-			"Warning: \"%s\" is too small and "
-			"will be rounded to zero. Integral "
-			"controller will be disabled\n", name);
+	else if (field_f < 1.0f / ALPHA_BETA_SCALE)
+		fprintf(stderr, "Warning: \"%s\" is too small and will be "
+			"rounded to zero.\n", name);
 	*field = (uint32_t)(field_f * ALPHA_BETA_SCALE);
 	return 0;
 }
@@ -157,7 +136,6 @@ static int try_get_percentage(int *val, const char *arg, int base)
 	*val = res;
 	return 0;
 }
-
 
 /* iproute2 v4.15 changed the API in commit b317557f5854bb8 / tag v4.15
  * Conveniently, the CBS scheduler got introduced in Linux in commit
@@ -184,6 +162,8 @@ static int dualpi2_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 	int c_protection = -1;
 	int drop_early = -1;
 	int drop_overload = -1;
+	uint32_t rtt_max = 0;
+	uint32_t rtt_typ = 0;
 	struct rtattr *tail;
 
 	while (argc > 0) {
@@ -205,13 +185,15 @@ static int dualpi2_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 				fprintf(stderr, "Illegal \"tupdate\"\n");
 				return -1;
 			}
-		} else if (strcmp(*argv, "alpha") == 0 &&
-			   parse_alpha_beta(argc, argv, &alpha))
+		} else if (strcmp(*argv, "alpha") == 0) {
+			NEXT_ARG();
+			if (parse_alpha_beta("alpha", *argv, &alpha))
 				return -1;
-		else if (strcmp(*argv, "beta") == 0 &&
-			   parse_alpha_beta(argc, argv, &beta))
+		} else if (strcmp(*argv, "beta") == 0) {
+			NEXT_ARG();
+			if (parse_alpha_beta("beta", *argv, &beta))
 				return -1;
-		else if (strcmp(*argv, "coupling_factor") == 0) {
+		} else if (strcmp(*argv, "coupling_factor") == 0) {
 			NEXT_ARG();
 			if (get_s32(&coupling_factor, *argv, 0) ||
 			    coupling_factor > 0xFFUL ||coupling_factor < 0) {
@@ -252,6 +234,18 @@ static int dualpi2_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 					"Illegal \"classic_protection\"\n");
                                 return -1;
                         }
+		} else if (strcmp(*argv, "max_rtt") == 0) {
+			NEXT_ARG();
+			if (get_time(&rtt_max, *argv)) {
+				fprintf(stderr, "Illegal \"rtt_max\"\n");
+				return -1;
+			}
+		} else if (strcmp(*argv, "typical_rtt") == 0) {
+			NEXT_ARG();
+			if (get_time(&rtt_typ, *argv)) {
+				fprintf(stderr, "Illegal \"rtt_typ\"\n");
+				return -1;
+			}
 		} else if (strcmp(*argv, "help") == 0) {
 			explain();
 			return -1;
@@ -264,8 +258,56 @@ static int dualpi2_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 		++argv;
 	}
 
-	tail = NLMSG_TAIL(n);
-	addattr_l(n, 1024, TCA_OPTIONS, NULL, 0);
+	if (rtt_max || rtt_typ) {
+		float alpha_f, beta_f;
+		SPRINT_BUF(max_rtt_t);
+		SPRINT_BUF(typ_rtt_t);
+		SPRINT_BUF(tupdate_t);
+		SPRINT_BUF(target_t);
+
+		if (!rtt_typ)
+			rtt_typ = max(rtt_max / RTT_TYP_TO_MAX, 1U);
+		else if (!rtt_max)
+			rtt_max = rtt_typ * RTT_TYP_TO_MAX;
+		else if (rtt_typ > rtt_max) {
+			fprintf(stderr, "typical_rtt must be >= max_rtt!\n");
+			return -1;
+		}
+		if (alpha != DEFAULT_ALPHA_BETA || beta != DEFAULT_ALPHA_BETA ||
+		    tupdate || target)
+			fprintf(stderr, "rtt_max is specified, ignoring values "
+				"specified for alpha/beta/tupdate/target\n");
+		target = rtt_typ;
+		tupdate = max(min(rtt_typ, rtt_max / 3), 1U);
+		alpha_f = (double)tupdate / ((double)rtt_max * rtt_max)
+			* TIME_UNITS_PER_SEC * 0.1f;
+		beta_f = 0.3f / (float)rtt_max * TIME_UNITS_PER_SEC;
+		if (beta_f > ALPHA_BETA_MAX) {
+			fprintf(stderr, "max_rtt=%s is too low and cause beta "
+				"to overflow!\n",
+				sprint_time(rtt_max, max_rtt_t));
+			return -1;
+		}
+		if (alpha_f < 1.0f / ALPHA_BETA_SCALE ||
+		    beta_f < 1.0f / ALPHA_BETA_SCALE) {
+			fprintf(stderr, "max_rtt=%s is too large and will "
+				"cause alpha=%f and/or beta=%f to be rounded "
+				"down to 0!\n", sprint_time(rtt_max, max_rtt_t),
+				alpha_f, beta_f);
+			return -1;
+		}
+		fprintf(stderr, "Auto-configuring parameters using "
+			"[max_rtt: %s, typical_rtt: %s]: "
+			"target=%s tupdate=%s alpha=%f beta=%f\n",
+			sprint_time(rtt_max, max_rtt_t),
+			sprint_time(rtt_typ, typ_rtt_t),
+			sprint_time(target, target_t),
+			sprint_time(tupdate, tupdate_t), alpha_f, beta_f);
+		alpha = alpha_f * ALPHA_BETA_SCALE;
+		beta = beta * ALPHA_BETA_SCALE;
+	}
+
+	tail = addattr_nest(n, 1024, TCA_OPTIONS);
 	if (limit)
 		addattr32(n, 1024, TCA_DUALPI2_LIMIT, limit);
 	if (tupdate)
@@ -290,8 +332,7 @@ static int dualpi2_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 		addattr8(n, 1024, TCA_DUALPI2_DROP_EARLY, drop_early);
 	if (c_protection != -1)
 		addattr8(n, 1024, TCA_DUALPI2_C_PROTECTION, c_protection);
-
-	tail->rta_len = (void *)NLMSG_TAIL(n) - (void *)tail;
+	addattr_nest_end(n, tail);
 	return 0;
 }
 

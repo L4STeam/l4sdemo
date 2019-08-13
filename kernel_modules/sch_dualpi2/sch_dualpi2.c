@@ -35,11 +35,22 @@
  * MAX_PROB must be consistent with the RNG in dualpi2_roll().
  */
 #define MAX_PROB ((u32)(~((u32)0)))
-/* Apha/beta are in units of 64ns to enable to use their full range of values */
+/* alpha/beta values exchanged over netlink are in units of 256ns */
+#define ALPHA_BETA_SHIFT 8
+/* Scaled values of alpha/beta must fit in 32b to avoid overflow in later
+ * computations. Consequently (see and dualpi2_scale_alpha_beta()), their
+ * netlink-provided values can use at most 31b, i.e. be at most most (2^23)-1
+ * (~4MHz) as those are given in 1/256th. This enable to tune alpha/beta to
+ * control flows whose maximal RTTs can be in usec up to few secs.
+ */
+#define ALPHA_BETA_MAX ((2 << 31) - 1)
+/* Internal alpha/beta are in units of 64ns.
+ * This enables to use all alpha/beta values in the allowed range without loss
+ * of precision due to rounding when scaling them internally, e.g.,
+ * scale_alpha_beta(1) will not round down to 0.
+ */
 #define ALPHA_BETA_GRANULARITY 6
-/* alpha/beta values exchanged over netlink */
-#define ALPHA_BETA_SHIFT (8 - ALPHA_BETA_GRANULARITY)
-#define ALPHA_BETA_MAX (40000 << ALPHA_BETA_SHIFT)
+#define ALPHA_BETA_SCALING (ALPHA_BETA_SHIFT - ALPHA_BETA_GRANULARITY)
 /* We express the weights (wc, wl) in %, i.e., wc + wl = 100 */
 #define MAX_WC 100
 
@@ -74,7 +85,6 @@ struct dualpi2_sched_data {
 	bool	drop_early;	/* Drop at enqueue instead of dequeue if true */
 	bool	drop_overload;	/* Drop (1) on overload, or overflow (0) */
 
-
 	/* Statistics */
 	u64	qdelay_c;	/* Classic Q delay */
 	u64	qdelay_l;	/* L4S Q delay */
@@ -82,7 +92,7 @@ struct dualpi2_sched_data {
 	u32	packets_in_l;	/* Number of packets enqueued in L queue */
 	u32	maxq;		/* maximum queue size */
 	u32	ecn_mark;	/* packets marked with ECN */
-	u32 	step_marks; 	/* ECN marks due to the step AQM */
+	u32	step_marks;	/* ECN marks due to the step AQM */
 #ifdef IS_TESTBED
 	struct testbed_metrics testbed;
 #endif
@@ -95,7 +105,7 @@ struct dualpi2_sched_data {
 
 struct dualpi2_skb_cb {
 	u64 ts;		/* Timestamp at enqueue */
-	u8 apply_step:1,/* Can we apply the step threshold (if l4444*/
+	u8 apply_step:1,/* Can we apply the step threshold */
 	   l4s:1,	/* Packet has been classified as L4S */
 	   ect:2;	/* Packet ECT codepoint */
 };
@@ -108,23 +118,28 @@ static inline struct dualpi2_skb_cb *dualpi2_skb_cb(struct sk_buff *skb)
 
 static inline u64 skb_sojourn_time(struct sk_buff *skb, u64 reference)
 {
-        return reference - dualpi2_skb_cb(skb)->ts;
+	return reference - dualpi2_skb_cb(skb)->ts;
 }
 
 static inline u64 qdelay_in_ns(struct Qdisc *q, u64 now)
 {
 	struct sk_buff *skb = qdisc_peek_head(q);
+
 	return skb ? skb_sojourn_time(skb, now) : 0;
 }
 
 static inline u32 dualpi2_scale_alpha_beta(u32 param)
 {
-	return ((u64)param * MAX_PROB >> ALPHA_BETA_SHIFT) / NSEC_PER_SEC;
+	u64 tmp  = ((u64)param * MAX_PROB >> ALPHA_BETA_SCALING);
+	do_div(tmp, NSEC_PER_SEC);
+	return tmp;
 }
 
- static inline u32 dualpi2_unscale_alpha_beta(u32 param)
+static inline u32 dualpi2_unscale_alpha_beta(u32 param)
 {
-	return ((u64)param * NSEC_PER_SEC << ALPHA_BETA_SHIFT) / MAX_PROB;
+	u64 tmp = ((u64)param * NSEC_PER_SEC << ALPHA_BETA_SCALING);
+	do_div(tmp, MAX_PROB);
+	return tmp;
 }
 
 static inline bool skb_is_l4s(struct sk_buff *skb)
@@ -195,13 +210,13 @@ static bool must_drop(struct Qdisc *sch, struct dualpi2_sched_data *q,
 				goto drop;
 			else
 				goto mark;
-		/* Apply scalable marking with a (prob * k) probability. */
+			/* Scalable marking has a  (prob * k) probability */
 		} else if (dualpi2_roll(local_l_prob)) {
 			goto mark;
 		}
-	/* Apply classic marking with a (prob * prob) probability.
-	 * Force drops for ECN-capable traffic on overload.
-	 */
+		/* Apply classic marking with a (prob * prob) probability.
+		 * Force drops for ECN-capable traffic on overload.
+		 */
 	} else if (dualpi2_squared_roll(q)) {
 		if (dualpi2_skb_cb(skb)->ect &&
 		    !dualpi2_is_overloaded(local_l_prob))
@@ -282,7 +297,7 @@ static int dualpi2_qdisc_enqueue(struct sk_buff *skb, struct Qdisc *sch,
 		goto drop;
 	}
 
-        dualpi2_skb_cb(skb)->ts = ktime_get_ns();
+	dualpi2_skb_cb(skb)->ts = ktime_get_ns();
 
 	if (qdisc_qlen(sch) > q->maxq)
 		q->maxq = qdisc_qlen(sch);
@@ -301,7 +316,6 @@ static int dualpi2_qdisc_enqueue(struct sk_buff *skb, struct Qdisc *sch,
 
 drop:
 	qdisc_drop(skb, sch, to_free);
-
 	return err;
 }
 
@@ -317,13 +331,13 @@ pick_packet:
 	skb = NULL;
 	/* We can drop after qdisc_dequeue_head() calls.
 	 * Manage statistics by hand to keep them consistent if that happens.
-	 * */
+	 */
 	if (qdisc_qlen(q->l_queue) > 0 &&
 	    (qlen_c <= 0 || q->c_protection.credit <= 0)) {
 		/* Dequeue and increase the credit by wc if qlen_c != 0 */
 		skb = __qdisc_dequeue_head(&q->l_queue->q);
-                credit_change = qlen_c ?
-                        q->c_protection.wc * qdisc_pkt_len(skb) : 0;
+		credit_change = qlen_c ?
+			q->c_protection.wc * qdisc_pkt_len(skb) : 0;
 		/* The global backlog will be updated later. */
 		qdisc_qstats_backlog_dec(q->l_queue, skb);
 		/* Propagate the dequeue to the global stats. */
@@ -331,8 +345,8 @@ pick_packet:
 	} else if (qlen_c > 0) {
 		/* Dequeue and decrease the credit by wl if qlen_l != 0 */
 		skb = __qdisc_dequeue_head(&sch->q);
-                credit_change = qdisc_qlen(q->l_queue) ?
-                        (s32)(-1) * q->c_protection.wl * qdisc_pkt_len(skb) : 0;
+		credit_change = qdisc_qlen(q->l_queue) ?
+			(s32)(-1) * q->c_protection.wl * qdisc_pkt_len(skb) : 0;
 	} else {
 		dualpi2_reset_c_protection(q);
 		goto exit;
@@ -386,6 +400,12 @@ exit:
 	return skb;
 }
 
+static s64 __scale_delta(u64 diff)
+{
+	do_div(diff, (1 << (ALPHA_BETA_GRANULARITY + 1)) - 1);
+	return diff;
+}
+
 static u32 calculate_probability(struct Qdisc *sch)
 {
 	struct dualpi2_sched_data *q = qdisc_priv(sch);
@@ -398,22 +418,22 @@ static u32 calculate_probability(struct Qdisc *sch)
 	q->qdelay_l = qdelay_in_ns(q->l_queue, now);
 	q->qdelay_c = qdelay_in_ns(sch, now);
 	qdelay = max_t(u64, q->qdelay_c, q->qdelay_l);
-	/* Alpha and beta take at most 31b. This leaves 33b for delay difference
-	 * computations,
-	 * i.e, would overflow for queueing delay differences > ~8sec.
+	/* Alpha and beta take at most 32b, i.e, the delay difference would
+	 * overflow for queueing delay differences > ~4.2sec.
 	 */
-	delta = ((s64)((s64)qdelay - q->pi2.target) * q->pi2.alpha)
-		/ ((1 << (ALPHA_BETA_GRANULARITY + 1)) - 1);
-	delta += ((s64)((s64)qdelay - qdelay_old) * q->pi2.beta)
-		/ ((1 << (ALPHA_BETA_GRANULARITY + 1)) - 1);
-	new_prob = (s64)delta + q->pi2.prob;
+	delta = ((s64)qdelay - q->pi2.target) * q->pi2.alpha;
+	delta += ((s64)qdelay - qdelay_old) * q->pi2.beta;
 	/* Prevent overflow */
 	if (delta > 0) {
+		new_prob = __scale_delta(delta) + q->pi2.prob;
 		if (new_prob < q->pi2.prob)
 			new_prob = MAX_PROB;
-	/* Prevent underflow */
-	} else if (new_prob > q->pi2.prob)
-		new_prob = 0;
+	} else {
+		new_prob = q->pi2.prob - __scale_delta(delta * -1);
+		/* Prevent underflow */
+		if (new_prob > q->pi2.prob)
+			new_prob = 0;
+	}
 	/* If we do not drop on overload, ensure we cap the L4S probability to
 	 * 100% to keep window fairness when overflowing.
 	 */
@@ -424,9 +444,9 @@ static u32 calculate_probability(struct Qdisc *sch)
 
 static void dualpi2_timer(struct timer_list *timer)
 {
-        struct dualpi2_sched_data *q = from_timer(q, timer, pi2.timer);
+	struct dualpi2_sched_data *q = from_timer(q, timer, pi2.timer);
 	struct Qdisc *sch = q->sch;
-	spinlock_t *root_lock;
+	spinlock_t *root_lock; /* Lock to access the head of both queues. */
 
 	root_lock = qdisc_lock(qdisc_root_sleeping(sch));
 	spin_lock(root_lock);
@@ -474,7 +494,7 @@ static int dualpi2_change(struct Qdisc *sch, struct nlattr *opt,
 
 		if (!limit) {
 			NL_SET_ERR_MSG_ATTR(extack, tb[TCA_DUALPI2_LIMIT],
-				    "limit must be greater than 0 !");
+					    "limit must be greater than 0 !");
 			return -EINVAL;
 		}
 		sch->limit = limit;
@@ -514,7 +534,6 @@ static int dualpi2_change(struct Qdisc *sch, struct nlattr *opt,
 			NL_SET_ERR_MSG_ATTR(extack, tb[TCA_DUALPI2_BETA],
 					    "beta is too large!");
 			return -EINVAL;
-
 		}
 		q->pi2.beta = dualpi2_scale_alpha_beta(beta);
 	}
@@ -523,11 +542,19 @@ static int dualpi2_change(struct Qdisc *sch, struct nlattr *opt,
 		q->step.thresh = nla_get_u32(tb[TCA_DUALPI2_STEP_THRESH]) *
 			NSEC_PER_USEC;
 
-	if (tb[TCA_DUALPI2_COUPLING])
-		q->coupling_factor = nla_get_u8(tb[TCA_DUALPI2_COUPLING]);
+	if (tb[TCA_DUALPI2_COUPLING]) {
+		u8 coupling = nla_get_u8(tb[TCA_DUALPI2_COUPLING]);
+
+		if (!coupling) {
+			NL_SET_ERR_MSG_ATTR(extack, tb[TCA_DUALPI2_COUPLING],
+					    "Must use a non-zero coupling!");
+			return -EINVAL;
+		}
+		q->coupling_factor = coupling;
+	}
 
 	if (tb[TCA_DUALPI2_STEP_PACKETS])
-                q->step.in_packets = nla_get_u8(tb[TCA_DUALPI2_STEP_PACKETS]);
+		q->step.in_packets = nla_get_u8(tb[TCA_DUALPI2_STEP_PACKETS]);
 
 	if (tb[TCA_DUALPI2_DROP_OVERLOAD])
 		q->drop_overload = nla_get_u8(tb[TCA_DUALPI2_DROP_OVERLOAD]);
@@ -569,10 +596,10 @@ static void dualpi2_reset_default(struct dualpi2_sched_data *q)
 {
 	q->sch->limit = 10000; /* Holds 125ms at 1G */
 
-	q->pi2.target = 15 * NSEC_PER_MSEC; /* 15 ms */
-	q->pi2.tupdate = usecs_to_jiffies(16 * USEC_PER_MSEC); /* 16 ms */
-	q->pi2.alpha = dualpi2_scale_alpha_beta(41); /* ~0.16 Hz */
-	q->pi2.beta = dualpi2_scale_alpha_beta(819); /* ~3.2 Hz */
+	q->pi2.target = 15 * NSEC_PER_MSEC;
+	q->pi2.tupdate = usecs_to_jiffies(16 * USEC_PER_MSEC);
+	q->pi2.alpha = dualpi2_scale_alpha_beta(41); /* ~0.16 Hz in 1/256th */
+	q->pi2.beta = dualpi2_scale_alpha_beta(819); /* ~3.2 Hz in 1/256th */
 	/* These values give a 10dB stability margin with max_rtt=100ms */
 
 	q->step.thresh = 1 * NSEC_PER_MSEC; /* 1ms */
@@ -593,20 +620,24 @@ static int dualpi2_init(struct Qdisc *sch, struct nlattr *opt,
 			struct netlink_ext_ack *extack)
 {
 	struct dualpi2_sched_data *q = qdisc_priv(sch);
-	int err;
 
-	if (!(q->l_queue = qdisc_create_dflt(sch->dev_queue, &pfifo_qdisc_ops,
-					     TC_H_MAKE(sch->handle, 1), extack)))
+	q->l_queue = qdisc_create_dflt(sch->dev_queue, &pfifo_qdisc_ops,
+				       TC_H_MAKE(sch->handle, 1), extack);
+	if (!q->l_queue)
 		return -ENOMEM;
 
 	q->sch = sch;
 	dualpi2_reset_default(q);
-        timer_setup(&q->pi2.timer, dualpi2_timer, 0);
+	timer_setup(&q->pi2.timer, dualpi2_timer, 0);
 
-	if (opt && (err = dualpi2_change(sch, opt, extack)))
-		return err;
+	if (opt) {
+		int err = dualpi2_change(sch, opt, extack);
 
-	mod_timer(&q->pi2.timer, jiffies + HZ / 2);
+		if (err)
+			return err;
+	}
+
+	mod_timer(&q->pi2.timer, (jiffies + HZ) >> 1);
 	return 0;
 }
 
@@ -620,7 +651,7 @@ static int dualpi2_dump(struct Qdisc *sch, struct sk_buff *skb)
 	if (!opts)
 		goto nla_put_failure;
 
-        do_div(target_usec, NSEC_PER_USEC);
+	do_div(target_usec, NSEC_PER_USEC);
 	if (!q->step.in_packets)
 		do_div(step_thresh, NSEC_PER_USEC);
 
@@ -652,7 +683,7 @@ static int dualpi2_dump_stats(struct Qdisc *sch, struct gnet_dump *d)
 {
 	struct dualpi2_sched_data *q = qdisc_priv(sch);
 	u64 qdelay_c_usec = q->qdelay_c;
-        u64 qdelay_l_usec = q->qdelay_l;
+	u64 qdelay_l_usec = q->qdelay_l;
 	struct tc_dualpi2_xstats st = {
 		.prob		= q->pi2.prob,
 		.packets_in_c	= q->packets_in_c,
@@ -663,8 +694,8 @@ static int dualpi2_dump_stats(struct Qdisc *sch, struct gnet_dump *d)
 		.step_marks	= q->step_marks,
 	};
 
-        do_div(qdelay_c_usec, NSEC_PER_USEC);
-        do_div(qdelay_l_usec, NSEC_PER_USEC);
+	do_div(qdelay_c_usec, NSEC_PER_USEC);
+	do_div(qdelay_l_usec, NSEC_PER_USEC);
 	st.delay_c = qdelay_c_usec;
 	st.delay_l = qdelay_l_usec;
 	return gnet_stats_copy_app(d, &st, sizeof(st));
@@ -725,8 +756,7 @@ static void __exit dualpi2_module_exit(void)
 module_init(dualpi2_module_init);
 module_exit(dualpi2_module_exit);
 
-MODULE_DESCRIPTION("Dual Queue with Proportional Integral controller "
-		   "Improved with a Square (dualpi2) scheduler");
+MODULE_DESCRIPTION("Dual Queue with Proportional Integral controller Improved with a Square (dualpi2) scheduler");
 MODULE_AUTHOR("Koen De Schepper");
 MODULE_AUTHOR("Olga Albisser");
 MODULE_AUTHOR("Henrik Steen");
