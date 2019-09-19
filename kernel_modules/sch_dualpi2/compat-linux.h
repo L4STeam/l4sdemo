@@ -5,7 +5,7 @@
 
 #include "compat-pkt_sched.h"
 
-#include "testbed.h" /* only used for testbed */
+#include "testbed.h"
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 6, 0)
 /* Workaround for missing backports of qdisc_tree_reduce_backlog which was
@@ -24,9 +24,24 @@ void qdisc_tree_decrease_qlen(struct Qdisc *sch,
 				: qdisc_tree_decrease_qlen(_a,_b))
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 0, 0)
+static inline __be16 tc_skb_protocol(const struct sk_buff *skb)
+{
+	/* The real function check for the vlan accelerated path tag,
+	 * cba portig that back as well.
+	 */
+	return skb->protocol;
+}
+#endif
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
-#define rtnl_qdisc_drop(skb, sch) qdisc_drop(skb, sch)
-#define qdisc_drop(skb, sch, to_free) qdisc_drop(skb, sch)
+#define EMPTY()
+#define DEFER(x) x EMPTY()
+/* We need some pre-processor magic here to ensure the 2-args qdisc_drop is
+ * not expanded as a macro but instead kept as a function
+ */
+#define rtnl_qdisc_drop(skb, sch) DEFER(qdisc_drop)(skb, sch)
+#define qdisc_drop(skb, sch, to_free) DEFER(qdisc_drop)(skb, sch)
 #define dualpi2_qdisc_enqueue(skb, sch, to_free) dualpi2_qdisc_enqueue(skb, sch)
 #endif
 
@@ -34,9 +49,18 @@ void qdisc_tree_decrease_qlen(struct Qdisc *sch,
 #define __qdisc_dequeue_head(x) __skb_dequeue(x)
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0)
+static inline int skb_try_make_writable(struct sk_buff *skb,
+					unsigned int write_len)
+{
+	return skb_cloned(skb) && !skb_clone_writable(skb, write_len) &&
+	       pskb_expand_head(skb, 0, 0, GFP_ATOMIC);
+}
+#endif
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0)
 #define dualpi2_timer(timer_list) dualpi2_timer(unsigned long arg)
-#define from_timer(q, timer, field) qdisc_priv((struct Qdisc *)sch)
+#define from_timer(q, timer, field) qdisc_priv((struct Qdisc *)arg)
 #define timer_setup(timer, func, flag) \
 	setup_timer(timer, func, (unsigned long)sch)
 #endif
