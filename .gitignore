@@ -25,3 +25,5 @@ environment.local
 .qmake.stash
 iproute2-l4s
 *.user
+
+.vscode
