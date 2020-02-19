@@ -830,6 +830,7 @@ static struct Qdisc_ops dualpi2_qdisc_ops __read_mostly = {
 
 static int __init dualpi2_module_init(void)
 {
+	testbed_metrics_init();
 	return register_qdisc(&dualpi2_qdisc_ops);
 }
 

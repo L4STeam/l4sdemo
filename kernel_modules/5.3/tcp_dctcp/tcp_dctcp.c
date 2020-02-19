@@ -73,7 +73,7 @@ static void dctcp_reset(const struct tcp_sock *tp, struct dctcp *ca)
 	ca->old_delivered_ce = tp->delivered_ce;
 }
 
-static bool __dctcp_init(struct sock *sk)
+static void __dctcp_init(struct sock *sk)
 {
 	const struct tcp_sock *tp = tcp_sk(sk);
 
@@ -90,7 +90,7 @@ static bool __dctcp_init(struct sock *sk)
 		ca->ce_state = 0;
 
 		dctcp_reset(tp, ca);
-		return true;
+		return;
 	}
 
 	/* No ECN support? Fall back to Reno. Also need to clear
@@ -98,7 +98,6 @@ static bool __dctcp_init(struct sock *sk)
 	 */
 	inet_csk(sk)->icsk_ca_ops = &dctcp_reno;
 	INET_ECN_dontxmit(sk);
-	return false;
 }
 
 static void dctcp_init(struct sock *sk)
@@ -127,7 +126,7 @@ static void dctcp_update_alpha(struct sock *sk, u32 flags)
 
 		/* alpha = (1 - g) * alpha + g * F */
 
-		alpha -= alpha >> dctcp_shift_g;
+		alpha -= min_not_zero(alpha, alpha >> dctcp_shift_g);
 		if (delivered_ce) {
 			u32 delivered = tp->delivered - ca->old_delivered;
 
