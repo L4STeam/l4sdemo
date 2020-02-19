@@ -620,6 +620,7 @@ static int dualpi2_init(struct Qdisc *sch, struct nlattr *opt,
 			struct netlink_ext_ack *extack)
 {
 	struct dualpi2_sched_data *q = qdisc_priv(sch);
+	testbed_metrics_init(&q->testbed);
 
 	q->l_queue = qdisc_create_dflt(sch->dev_queue, &pfifo_qdisc_ops,
 				       TC_H_MAKE(sch->handle, 1), extack);

@@ -526,6 +526,7 @@ static int dualpi2_init(struct Qdisc *sch, struct nlattr *opt,
 #endif
 {
 	struct dualpi2_sched_data *q = qdisc_priv(sch);
+	testbed_metrics_init(&q->testbed);
 
 	dualpi2_params_init(&q->params);
 	dualpi2_calculate_alpha_beta(q);
@@ -794,7 +795,8 @@ drop:
 static void dualpi2_reset(struct Qdisc *sch)
 {
 	struct dualpi2_sched_data *q = qdisc_priv(sch);
-
+	testbed_metrics_init(&q->testbed);
+	
 	qdisc_reset_queue(sch);
 	qdisc_reset_queue(q->l_queue);
 }
@@ -830,7 +832,7 @@ static struct Qdisc_ops dualpi2_qdisc_ops __read_mostly = {
 
 static int __init dualpi2_module_init(void)
 {
-	testbed_metrics_init();
+	// testbed_metrics_init();
 	return register_qdisc(&dualpi2_qdisc_ops);
 }
 
