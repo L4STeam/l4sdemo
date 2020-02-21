@@ -4,8 +4,7 @@
 //#include <linux/types.h>
 #include <assert.h>
 #include <sys/time.h>
-#include <stropts.h>
-//#include <iostream>
+// #include <stropts.h> No longer supported, refer to https://bugzilla.redhat.com/show_bug.cgi?id=656245
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
@@ -17,7 +16,7 @@
 #include <sys/signal.h>
 #include <sys/uio.h>
 #include <errno.h>
-#include <strings.h>
+#include <string.h>
 
 char buffer[1448]; /* Typical MSS on ethernet*/
 
@@ -119,7 +118,7 @@ int main(int argc, char *argv[]){
   int listen_sock, clientaddrlen = sizeof(struct sockaddr_in);
   int port;
   int err;
-  int socketh;
+  long socketh;
   pthread_t test_server;
 
   if(argc != 2){

@@ -4,7 +4,6 @@
 //#include <linux/types.h>
 #include <assert.h>
 #include <sys/time.h>
-//#include <iostream>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
@@ -16,7 +15,7 @@
 #include <sys/signal.h>
 #include <sys/uio.h>
 #include <errno.h>
-#include <strings.h>
+#include <string.h>
 
 int samples[100000]; //Array holding the Pareto distribution samples file
 int sampleindex;

@@ -20,7 +20,7 @@
 #include <linux/types.h>
 #include <assert.h>
 #include <time.h>
-#include <stropts.h>
+// #include <stropts.h> No longer supported, refer to https://bugzilla.redhat.com/show_bug.cgi?id=656245
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>

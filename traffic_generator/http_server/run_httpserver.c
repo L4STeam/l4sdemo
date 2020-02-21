@@ -4,8 +4,7 @@
 //#include <linux/types.h>
 #include <assert.h>
 #include <sys/time.h>
-#include <stropts.h>
-//#include <iostream>
+// #include <stropts.h> No longer supported, refer to https://bugzilla.redhat.com/show_bug.cgi?id=656245
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
@@ -17,7 +16,7 @@
 #include <sys/signal.h>
 #include <sys/uio.h>
 #include <errno.h>
-#include <strings.h>
+#include <string.h>
 
 int sockets[100000]; // Array holding the sockets to pass to the thread
 int samples[100000]; //Array holding the Pareto distribution samples file size to pass to the thread
@@ -170,7 +169,7 @@ int main(int argc, char *argv[]){
   int port;
   int err;
   pthread_t test_server;
-  int sampleindex = 0;
+  long sampleindex = 0;
 
   if(argc != 3){
     fprintf(stderr,
