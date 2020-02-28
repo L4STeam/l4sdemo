@@ -1,7 +1,11 @@
 #!/bin/bash
 #set -e
 
-HERE=$(realpath $(dirname $0))
+if [ ${PWD##*/} = "l4sdemo" ]; then
+    HERE=$(realpath $(dirname $0))    
+else
+    HERE=$(realpath $(dirname $(pwd)))
+fi
 
 REV=$(uname -r | awk -F '.' '{ printf "%d.%d", $1, $2 }')
 
@@ -25,9 +29,11 @@ if [ ! -d $mod_dir ]; then
 fi
 
 for mod in $mod_dir/*; do
-	varname=$(make -qpv -f ${mod}/Makefile | awk '/TARGET :=/ { print $3; }')
-	(cd $mod && \
+    varname=$(make -qpv -f ${mod}/Makefile | awk '/TARGET :=/ { print $3; }')
+    (cd $mod && \
         make -e "CFLAGS_${varname}.o='${EXTRA_CFLAGS}'" && \
         sudo make unload \
-        && sudo make load)
+    && sudo make load)
 done
+
+make -e "CFLAGS_$(make -qpv -f Makefile | awk '/TARGET :=/ { print $3; }').o='-I. -I /home/$(whoami)/l4sdemo/common -DIS_TESTBED=1'" && sudo make unload && sudo make load
