@@ -9,7 +9,7 @@ export SRC_NET="10.0.0.0/24"
 # Client and servers addresses
 export SERVER_A="10.0.0.1"
 # export SERVER_B="192.168.10.114"
-export CLIENT_A="10.0.0.2"1
+export CLIENT_A="10.0.0.2"
 export CLIENT_B="10.0.0.3"
 # The interface on both clients connected to the aqm/router (to apply mixed rtt)
 export CLIENT_A_IFACE="enp2s0f0"
