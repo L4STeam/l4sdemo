@@ -1,11 +1,7 @@
 #!/bin/bash
 #set -e
 
-if [ ${PWD##*/} = "l4sdemo" ]; then
-    HERE=$(realpath $(dirname $0))
-else
-    HERE=$(realpath $(dirname $(pwd)))
-fi
+HERE=$(realpath $(dirname $0))
 
 source "$HERE/environment.sh"
 
@@ -26,15 +22,15 @@ fi
 for mod in $mod_dir/*; do
     varname=$(make -qp -f ${mod}/Makefile | awk '/TARGET :=/ { print $3; }')
     if [ "$REV" = "5.3" ]; then
-        (cd $mod && \
-            make "CFLAGS_${varname}.o='${EXTRA_CFLAGS}'" && \
-            sudo make unload \
-        && sudo make load)
-    else
-        
-        (cd $mod && \
-            make -e "CFLAGS_${varname}.o='${EXTRA_CFLAGS}'" && \
-            sudo make unload \
-        && sudo make load)
-    fi
-done
+	(cd $mod && \
+	    make "CFLAGS_${varname}.o='${EXTRA_CFLAGS}'" && \
+	    sudo make unload \
+	    && sudo make load)
+		else
+
+		    (cd $mod && \
+			make -e "CFLAGS_${varname}.o='${EXTRA_CFLAGS}'" && \
+			sudo make unload \
+			&& sudo make load)
+					fi
+				    done
