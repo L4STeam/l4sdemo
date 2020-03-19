@@ -3,7 +3,9 @@
 
 HERE=$(realpath $(dirname $0))
 
-source "$HERE/environment.sh"
+if [ -f "$HERE/environment.sh" ]; then
+	source "$HERE/environment.sh"
+fi
 
 REV=$(uname -r | awk -F '.' '{ printf "%d.%d", $1, $2 }')
 
@@ -20,21 +22,17 @@ if [ ! -d $mod_dir ]; then
 fi
 
 for mod in $mod_dir/*; do
-    varname=$(make -qpv -f ${mod}/Makefile | awk '/TARGET :=/ { print $3; }')
+    varname=$(make -qp -f ${mod}/Makefile | awk '/TARGET :=/ { print $3; }')
     if [ "$REV" = "5.3" ]; then
-        (cd $mod && \
-            make "CFLAGS_${varname}.o='${EXTRA_CFLAGS}'" && \
-            sudo make unload \
-        && sudo make load)
-    else
-        
-        (cd $mod && \
-            make -e "CFLAGS_${varname}.o='${EXTRA_CFLAGS}'" && \
-            sudo make unload \
-        && sudo make load)
-    fi
-done
+	(cd $mod && \
+	    make "CFLAGS_${varname}.o='${EXTRA_CFLAGS}'" && \
+	    sudo make unload \
+	    && sudo make load)
+		else
 
-if [ "$REV" != "5.3" ]; then
-    make -e "CFLAGS_$(make -qpv -f Makefile | awk '/TARGET :=/ { print $3; }').o='-I. -I /home/$(whoami)/l4sdemo/common -DIS_TESTBED=1'" && sudo make unload && sudo make load
-fi
+		    (cd $mod && \
+			make -e "CFLAGS_${varname}.o='${EXTRA_CFLAGS}'" && \
+			sudo make unload \
+			&& sudo make load)
+					fi
+				    done
