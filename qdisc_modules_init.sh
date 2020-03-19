@@ -16,23 +16,23 @@ sudo tc qdisc del root dev $IFACE || true
 
 mod_dir=${HERE}/kernel_modules/${REV}
 if [ ! -d $mod_dir ]; then
-    echo ""
-    echo "Cannot find kernel modules matching the running kernel!"
-    exit 1
+	echo ""
+	echo "Cannot find kernel modules matching the running kernel!"
+	exit 1
 fi
 
 for mod in $mod_dir/*; do
-    varname=$(make -qp -f ${mod}/Makefile | awk '/TARGET :=/ { print $3; }')
-    if [ "$REV" = "5.3" ]; then
-	(cd $mod && \
-	    make "CFLAGS_${varname}.o='${EXTRA_CFLAGS}'" && \
-	    sudo make unload \
-	    && sudo make load)
-		else
+	varname=$(make -qp -f ${mod}/Makefile | awk '/TARGET :=/ { print $3; }')
+	if [ "$REV" = "5.3" ]; then
+		(cd $mod &&
+			make "CFLAGS_${varname}.o='${EXTRA_CFLAGS}'" &&
+			sudo make unload &&
+			sudo make load)
+	else
 
-		    (cd $mod && \
-			make -e "CFLAGS_${varname}.o='${EXTRA_CFLAGS}'" && \
-			sudo make unload \
-			&& sudo make load)
-					fi
-				    done
+		(cd $mod &&
+			make -e "CFLAGS_${varname}.o='${EXTRA_CFLAGS}'" &&
+			sudo make unload &&
+			sudo make load)
+	fi
+done
