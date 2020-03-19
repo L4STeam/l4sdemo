@@ -34,14 +34,13 @@ __check_machines "$SERVER_B" "SERVER_B"
 
 for machine in "$CLIENT_A" "$CLIENT_B" "$SERVER_A" "$SERVER_B"; do
 	if [ -n "$machine" ]; then
-		ssh -t $machine bash -xc "$(
-			cat <<EOF
+		ssh -t $machine bash -xc "$(cat << EOF
 whoami
 mkdir -p .ssh
 chmod 700 .ssh
 echo "$(cat ${SSH_KEY})" >> .ssh/authorized_keys
 EOF
-		)"
+)"
 		scp -r traffic_generator $machine:.
 		scp -r kernel_modules $machine:.
 		scp -r common $machine:.
@@ -51,28 +50,28 @@ done
 
 for client in "$CLIENT_A" "$CLIENT_B"; do
 	if [ -n "$client" ]; then
-		ssh -t $client bash -xc "$(
-			cat <<EOF
+		ssh -t $client bash -xc "$(cat << EOF
 whoami
+sudo apt install -y iperf
 make -C traffic_generator/http_client
 make -C traffic_generator/dl_client
 chmod +x qdisc_modules_init.sh
 ./qdisc_modules_init.sh
 EOF
-		)"
+)"
 	fi
 done
 
 for server in "$SERVER_A" "$SERVER_B"; do
 	if [ -n "$server" ]; then
-		ssh -t $server bash -xc "$(
-			cat <<EOF
+		ssh -t $server bash -xc "$(cat << EOF
 whoami
+sudo apt install -y iperf
 make -C traffic_generator/http_server
 make -C traffic_generator/dl_server
 chmod +x qdisc_modules_init.sh
 ./qdisc_modules_init.sh
 EOF
-		)"
+)"
 	fi
 done
