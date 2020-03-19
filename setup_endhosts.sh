@@ -39,7 +39,7 @@ for machine in "$CLIENT_A" "$CLIENT_B" "$SERVER_A" "$SERVER_B"; do
 whoami
 mkdir -p .ssh
 chmod 700 .ssh
-echo "$(cat ${SSH_KEY}.pub)" >> .ssh/authorized_keys
+echo "$(cat ${SSH_KEY})" >> .ssh/authorized_keys
 EOF
 		)"
 		scp -r traffic_generator $machine:.
