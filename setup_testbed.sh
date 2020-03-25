@@ -32,6 +32,10 @@ ${HERE}/qdisc_modules_init.sh
 
 ${HERE}/iproute2-addons/build.sh
 
+# Qwt can only be installed with g++-7
+echo "Installing g++7"
+sudo apt install -y g++-7
+
 # install Qt 5.0.1 - has to be this version to build qwt
 echo "Installing Qt - proceed with the dialog when prompted."
 QT_VERSION=qt-linux-opensource-5.0.1-x86_64-offline.run
