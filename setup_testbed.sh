@@ -57,6 +57,7 @@ if [ ! -d $QWT_DIR ]; then
 	pushd $QWT_DIR
 	/home/$(whoami)/Qt5.0.1/5.0.1/gcc_64/bin/qmake qwt.pro
 	make -j$(nproc)
+	sudo make install
 	popd
 fi
 
