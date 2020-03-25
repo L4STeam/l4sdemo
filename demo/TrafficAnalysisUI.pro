@@ -10,7 +10,7 @@ TARGET = L4SDemo
 CONFIG   -= app_bundle
 CONFIG += c++11 release force_debug_info
 TEMPLATE = app
-
+QMAKE_CXX = g++-7
 
 SOURCES += src/main.cpp \
     src/datagenerator.cpp \
