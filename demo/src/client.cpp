@@ -536,7 +536,7 @@ void Client::readCCList()
 
 void Client::updateQos(int CS)
 {
-    switch (cs)
+    switch (CS)
     {
     case 0:
     case 1:
