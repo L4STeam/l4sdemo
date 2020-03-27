@@ -109,7 +109,7 @@ Client::Client(QWidget *parent, const char *download_path,
     downloadsBoxLayout->addWidget(titleDownloads);
 
     QLabel *titleQos = new QLabel("QoS:", this);
-    QComboBox *qosSelect = new QComboBox(this);
+    qosSelect = new QComboBox(this);
     qosSelect->addItem("CS0");
     qosSelect->addItem("CS1");
     qosSelect->addItem("CS5");
@@ -430,26 +430,84 @@ void Client::commitData()
 
 void Client::updateWebBrowsing0(bool toggled)
 {
+    int CS = 0x0;
+
+    switch (qosSelect->currentIndex())
+    {
+    case 0:
+        CS = 0x0;
+        break;
+    case 1:
+        CS = 0x20;
+        break;
+    case 2:
+        CS = 0xa0;
+        break;
+    case 3:
+        CS = 0xe0;
+        break;
+    }
+
     if (toggled)
-        _RUN_SCRIPT(ssh_wb + "0");
+    {
+        std::stringstream command;
+        command << ssh_wb << "0 " << CS;
+        _RUN_SCRIPT(command.str());
+    }
 }
 
 void Client::updateWebBrowsing10(bool toggled)
 {
+    int CS = 0x0;
+
+    switch (qosSelect->currentIndex())
+    {
+    case 0:
+        CS = 0x0;
+        break;
+    case 1:
+        CS = 0x20;
+        break;
+    case 2:
+        CS = 0xa0;
+        break;
+    case 3:
+        CS = 0xe0;
+        break;
+    }
+
     if (toggled)
     {
         std::stringstream command;
-        command << ssh_wb << "10 " << getLinkCap();
+        command << ssh_wb << "10 " << getLinkCap() << " " << CS;
         _RUN_SCRIPT(command.str());
     }
 }
 
 void Client::updateWebBrowsing100(bool toggled)
 {
+    int CS = 0x0;
+
+    switch (qosSelect->currentIndex())
+    {
+    case 0:
+        CS = 0x0;
+        break;
+    case 1:
+        CS = 0x20;
+        break;
+    case 2:
+        CS = 0xa0;
+        break;
+    case 3:
+        CS = 0xe0;
+        break;
+    }
+
     if (toggled)
     {
         std::stringstream command;
-        command << ssh_wb << "100 " << getLinkCap();
+        command << ssh_wb << "100 " << getLinkCap() << " " << CS;
         _RUN_SCRIPT(command.str());
     }
 }
@@ -533,22 +591,39 @@ void Client::readCCList()
     else
         std::cerr << "ERROR: 'cc_list' file is missing or corrupted." << std::endl;
 }
-
+/* We currently only check for the following CS codepoints for classifying type of service:
+* CS0 = 0x0 (defualt)
+* CS1 = 0x20
+* CS5 = 0xa0
+* CS7 = 0xe0
+*/
 void Client::updateQos(int CS)
 {
-    switch (cs)
+    switch (CS)
     {
     case 0:
+        CS = 0x0;
+        break;
     case 1:
+        CS = 0x20;
         break;
     case 2:
-        CS = 5;
+        CS = 0xa0;
         break;
     case 3:
-        CS = 7;
+        CS = 0xe0;
         break;
     }
-    std::cout << "CS setting is: " << CS << std::endl;
+
+    std::stringstream command;
+    if (btnwb0->isChecked())
+        command << ssh_wb << "0 " << CS;
+    else if (btnwb10->isChecked())
+        command << ssh_wb << "10 " << getLinkCap() << " " << CS;
+    else
+        command << ssh_wb << "100 " << getLinkCap() << " " << CS;
+
+    _RUN_SCRIPT(command.str());
 }
 
 void Client::updateRTT(int num)
