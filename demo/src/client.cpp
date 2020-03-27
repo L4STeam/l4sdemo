@@ -18,65 +18,63 @@
 #include <fstream>
 #include <qwt_color_map.h>
 
-class NoScaleDraw : public QwtScaleDraw {
+class NoScaleDraw : public QwtScaleDraw
+{
 protected:
     virtual void drawTick(QPainter *p, double val, double len) const
-	{ (void)p; (void)val; (void)len; }
+    {
+        (void)p;
+        (void)val;
+        (void)len;
+    }
     virtual void drawBackbone(QPainter *p) const { (void)p; }
-    virtual void drawLabel(QPainter *p, double val) const { (void)p; (void)val; }
+    virtual void drawLabel(QPainter *p, double val) const
+    {
+        (void)p;
+        (void)val;
+    }
 };
 
-class UnrelatedNumberScaleDraw : public NoScaleDraw {
+class UnrelatedNumberScaleDraw : public NoScaleDraw
+{
 public:
     UnrelatedNumberScaleDraw() : unrelatedNumber(0.0) {}
-    void setNumber(double num) { unrelatedNumber = num;}
+    void setNumber(double num) { unrelatedNumber = num; }
     void setUnit(QString u) { unit = u; }
+
 protected:
-    virtual void 	drawLabel (QPainter *painter, double value) const
+    virtual void drawLabel(QPainter *painter, double value) const
     {
-        if (value < 99 && value > 101) return;
+        if (value < 99 && value > 101)
+            return;
         QwtText lbl(QString().setNum(unrelatedNumber) + unit); // = tickLabel( painter->font(), unrelatedNumber );
-        lbl.setRenderFlags( 0 );
+        lbl.setRenderFlags(0);
         lbl.setLayoutAttribute(QwtText::MinimumLayout);
-        if ( lbl.isEmpty() )
+        if (lbl.isEmpty())
             return;
 
-        QPointF pos = labelPosition( 100 );
-        QSizeF labelSize = lbl.textSize( painter->font() );
-        const QTransform transform = labelTransformation( pos, labelSize );
+        QPointF pos = labelPosition(100);
+        QSizeF labelSize = lbl.textSize(painter->font());
+        const QTransform transform = labelTransformation(pos, labelSize);
 
         painter->save();
-        painter->setWorldTransform( transform, true );
+        painter->setWorldTransform(transform, true);
 
-        lbl.draw ( painter, QRect( QPoint( 0, 0 ), labelSize.toSize() ) );
+        lbl.draw(painter, QRect(QPoint(0, 0), labelSize.toSize()));
         painter->restore();
     }
+
 private:
     double unrelatedNumber;
     QString unit;
 };
 
-Client::Client(QWidget *parent, const char* download_path,
-	       const char* killall_path, const char* wb_path,
-	       const char* rtt_path, const char* cc_path,
-	       const char* al_path,
-	       const char* cbr_path, const QColor& color, int init_cc)
-    : QGroupBox(parent)
-    , linkcap(40)
-    , displayNumDownloads(0)
-    , noScaleDraw(0)
-    , noScaleDrawAL(0)
-    , unrelatedNumberScaleDraw(0)
-    , complHS(true)
-    , nrFlows(0)
-    , rate(0.0)
-    , ssh_killall(killall_path)
-    , ssh_download(download_path)
-    , ssh_wb(wb_path)
-    , ssh_rtt(rtt_path)
-    , ssh_al(al_path)
-    , ssh_cbr(cbr_path)
-    , ssh_cc(cc_path)
+Client::Client(QWidget *parent, const char *download_path,
+               const char *killall_path, const char *wb_path,
+               const char *rtt_path, const char *cc_path,
+               const char *al_path,
+               const char *cbr_path, const QColor &color, int init_cc)
+    : QGroupBox(parent), linkcap(40), displayNumDownloads(0), noScaleDraw(0), noScaleDrawAL(0), unrelatedNumberScaleDraw(0), complHS(true), nrFlows(0), rate(0.0), ssh_killall(killall_path), ssh_download(download_path), ssh_wb(wb_path), ssh_rtt(rtt_path), ssh_al(al_path), ssh_cbr(cbr_path), ssh_cc(cc_path)
 {
     _RUN_SCRIPT(ssh_killall);
     QFont axisFont("Times New Roman", 10);
@@ -109,6 +107,16 @@ Client::Client(QWidget *parent, const char* download_path,
     QHBoxLayout *downloadsBoxLayout = new QHBoxLayout;
     QLabel *titleDownloads = new QLabel("Downloads", this);
     downloadsBoxLayout->addWidget(titleDownloads);
+
+    QLabel *titleQos = new QLabel("QoS:", this);
+    QComboBox *qosSelect = new QComboBox(this);
+    qosSelect->addItem("CS0");
+    qosSelect->addItem("CS1");
+    qosSelect->addItem("CS5");
+    qosSelect->addItem("CS7");
+    downloadsBoxLayout->addWidget(titleQos);
+    downloadsBoxLayout->addWidget(qosSelect);
+
     rttSelect = new QComboBox(this);
     rttSelect->insertItems(0, rttList);
     rttSelect->setFixedWidth(50);
@@ -133,12 +141,13 @@ Client::Client(QWidget *parent, const char* download_path,
     plotWidget = new QwtPlot(this);
     barChart = new QwtPlotMultiBarChart("downloads");
     barChart->attach(plotWidget);
-    plotWidget->setContentsMargins(-20,0,0,10);
+    plotWidget->setContentsMargins(-20, 0, 0, 10);
 
     samples.resize(10);
     barChart->setSamples(samples);
     barChart->setOrientation(Qt::Horizontal);
-    for (int i = 0 ; i < 10; ++i) {
+    for (int i = 0; i < 10; ++i)
+    {
         QwtColumnSymbol *symbol = new QwtColumnSymbol(QwtColumnSymbol::Box);
         symbol->setPalette(color);
         barChart->setSymbol(i, symbol);
@@ -156,7 +165,7 @@ Client::Client(QWidget *parent, const char* download_path,
 
     QwtPlotMarker *marker = new QwtPlotMarker("limit");
     marker->setLineStyle(QwtPlotMarker::VLine);
-    marker->setValue(100.0,0.0);
+    marker->setValue(100.0, 0.0);
     marker->attach(plotWidget);
 
     plotWidgetAL = new QwtPlot(this);
@@ -168,7 +177,7 @@ Client::Client(QWidget *parent, const char* download_path,
     ALAppChart->setSpacing(0);
     QHBoxLayout *alSelectLayout = new QHBoxLayout;
     QLabel *titleAL = new QLabel("AL", this);
-    titleAL->setContentsMargins(0,0,0,0);
+    titleAL->setContentsMargins(0, 0, 0, 0);
     alCheckb = new QCheckBox(this);
     alCheckb->setChecked(false);
     alSelectLayout->addWidget(alCheckb);
@@ -183,7 +192,7 @@ Client::Client(QWidget *parent, const char* download_path,
 
     QVBoxLayout *ccSelectLayout = new QVBoxLayout;
     QLabel *titleCC = new QLabel("CC", this);
-    titleCC->setContentsMargins(0,0,0,0);
+    titleCC->setContentsMargins(0, 0, 0, 0);
     ccSelectLayout->addWidget(titleCC);
 
     QVBoxLayout *alccSelectLayout = new QVBoxLayout;
@@ -199,10 +208,10 @@ Client::Client(QWidget *parent, const char* download_path,
     plotWidgetAL->setAxisAutoScale(QwtPlot::xBottom, false);
     plotWidgetAL->setAxisScale(QwtPlot::xBottom, 0.0, 200.0);
     plotWidgetAL->setFixedHeight(15);
-    plotWidgetAL->setContentsMargins(-25,0,0,-25);
+    plotWidgetAL->setContentsMargins(-25, 0, 0, -25);
     QwtPlotMarker *marker1 = new QwtPlotMarker("limit1");
     marker1->setLineStyle(QwtPlotMarker::VLine);
-    marker1->setValue(100.0,0.0);
+    marker1->setValue(100.0, 0.0);
     marker1->attach(plotWidgetAL);
 
     QwtText titleCBRX;
@@ -218,7 +227,7 @@ Client::Client(QWidget *parent, const char* download_path,
     CBRAppChart->setSpacing(0);
     QVBoxLayout *cbrSelectLayout = new QVBoxLayout;
     QLabel *titleCBR = new QLabel("CBR", this);
-    titleCBR->setContentsMargins(0,0,0,0);
+    titleCBR->setContentsMargins(0, 0, 0, 0);
     cbrSelect = new QComboBox(this);
     cbrSelect->insertItems(0, cbrList);
     cbrSelect->setFixedWidth(50);
@@ -239,7 +248,7 @@ Client::Client(QWidget *parent, const char* download_path,
     plotWidgetCBR->setAxisAutoScale(QwtPlot::xBottom, false);
     plotWidgetCBR->setAxisScale(QwtPlot::xBottom, 0.0, 100.0);
     plotWidgetCBR->setMinimumHeight(58);
-    plotWidgetCBR->setContentsMargins(-25,0,0,0);
+    plotWidgetCBR->setContentsMargins(-25, 0, 0, 0);
     plotWidgetCBR->setAxisTitle(2, titleCBRX);
 
     plotCompl = new QwtPlot(this);
@@ -255,8 +264,8 @@ Client::Client(QWidget *parent, const char* download_path,
     logscaleX = new QwtLogScaleEngine();
     logscaleY = new QwtLogScaleEngine();
 
-    plotCompl->setAxisScaleEngine(0,(QwtScaleEngine*)logscaleY);
-    plotCompl->setAxisScaleEngine(2,(QwtScaleEngine*)logscaleX);
+    plotCompl->setAxisScaleEngine(0, (QwtScaleEngine *)logscaleY);
+    plotCompl->setAxisScaleEngine(2, (QwtScaleEngine *)logscaleX);
     plotCompl->setAxisFont(0, axisFont);
     plotCompl->setAxisFont(2, axisFont);
     title.setText("Flow size [log(bytes)]");
@@ -272,9 +281,9 @@ Client::Client(QWidget *parent, const char* download_path,
     dataDisplayLayout->addWidget(sliderDownloads, 1, 0, 1, 1);
     dataDisplayLayout->addWidget(plotWidget, 1, 1, 1, 1);
     dataDisplayLayout->addWidget(plotCompl, 1, 2, 1, 1);
-    dataDisplayLayout->addLayout(alccLayout, 3,1,1,1);
-    dataDisplayLayout->addLayout(alccSelectLayout, 3,0,1,1);
-    dataDisplayLayout->addLayout(cbrLayout, 3,2,1,1);
+    dataDisplayLayout->addLayout(alccLayout, 3, 1, 1, 1);
+    dataDisplayLayout->addLayout(alccSelectLayout, 3, 0, 1, 1);
+    dataDisplayLayout->addLayout(cbrLayout, 3, 2, 1, 1);
     alccSelectLayout->setAlignment(titleAL, Qt::AlignTop);
     alccSelectLayout->setAlignment(titleCC, Qt::AlignBottom);
     alccLayout->setAlignment(plotWidgetAL, Qt::AlignTop);
@@ -288,6 +297,7 @@ Client::Client(QWidget *parent, const char* download_path,
     connect(btnwb0, SIGNAL(toggled(bool)), this, SLOT(updateWebBrowsing0(bool)));
     connect(btnwb10, SIGNAL(toggled(bool)), this, SLOT(updateWebBrowsing100(bool)));
     connect(btnwb100, SIGNAL(toggled(bool)), this, SLOT(updateWebBrowsing10(bool)));
+    connect(qosSelect, SIGNAL(currentIndexChanged(int)), this, SLOT(updateQos(int)));
     connect(rttSelect, SIGNAL(currentIndexChanged(int)), this, SLOT(updateRTT(int)));
     connect(alCheckb, SIGNAL(toggled(bool)), this, SLOT(updateAL(bool)));
     connect(cbrSelect, SIGNAL(currentIndexChanged(int)), this, SLOT(updateCBR(int)));
@@ -304,25 +314,25 @@ void Client::cleanup() const
 
 Client::~Client()
 {
-	cleanup();
+    cleanup();
 }
 
 void Client::updateNumDownloads(int num)
 {
-    nrFlows=num;
+    nrFlows = num;
     displayNumDownloads->setText(QString().setNum(num));
 }
 
 void Client::startDownloads()
 {
     std::stringstream command;
-    command << ssh_download << " " <<  nrFlows;
+    command << ssh_download << " " << nrFlows;
     _RUN_SCRIPT(command.str());
 }
 
 void Client::updateSamples(std::vector<double> rsamples, double cbr_rate,
-			   double al_rate, QVector<QwtPoint3D>& csamples,
-			   QVector<QwtPoint3D>& csamples_hs)
+                           double al_rate, QVector<QwtPoint3D> &csamples,
+                           QVector<QwtPoint3D> &csamples_hs)
 {
     (void)al_rate;
     QMutexLocker m(&dataMutex);
@@ -330,45 +340,51 @@ void Client::updateSamples(std::vector<double> rsamples, double cbr_rate,
     samples.resize(10);
 
     int i = 0;
-    for (auto it = rsamples.begin(); it != rsamples.end(); ++it){
-          samples[9-i].push_back(*it);
-          i++;
-          if (i > 9)
-              break;
+    for (auto it = rsamples.begin(); it != rsamples.end(); ++it)
+    {
+        samples[9 - i].push_back(*it);
+        i++;
+        if (i > 9)
+            break;
     }
     sampleCBR.replace(0, cbr_rate);
     sampleAL.replace(0, al_rate);
 
     int nr = 0;
     for (auto it = csamples.begin(), it_hs = csamples_hs.begin();
-         it != csamples.end() && it_hs != csamples_hs.end(); ++it, ++it_hs){
+         it != csamples.end() && it_hs != csamples_hs.end(); ++it, ++it_hs)
+    {
         CData.append(*it);
         CData_hs.append(*it_hs);
         nr++;
     }
     nrComplSamples.push_back(nr);
 
-    if (nrComplSamples.size() > 60){
+    if (nrComplSamples.size() > 60)
+    {
         nr = nrComplSamples.front();
         nrComplSamples.erase(nrComplSamples.begin());
-        for (int i = 0; i < nr; ++i) {
+        for (int i = 0; i < nr; ++i)
+        {
             CData.erase(CData.begin());
             CData_hs.erase(CData_hs.begin());
         }
     }
     double subtract = 16;
-    int index = CData.size()-1-nrComplSamples.back();
-    for (auto itNr = nrComplSamples.crbegin()+1; itNr != nrComplSamples.crend(); ++itNr) {
-        while (index >= 0 && index > index-*itNr) {
+    int index = CData.size() - 1 - nrComplSamples.back();
+    for (auto itNr = nrComplSamples.crbegin() + 1; itNr != nrComplSamples.crend(); ++itNr)
+    {
+        while (index >= 0 && index > index - *itNr)
+        {
             QwtPoint3D point = CData.at(index);
-            point.setZ(point.z()-subtract);
-            CData.replace(index,point);
+            point.setZ(point.z() - subtract);
+            CData.replace(index, point);
             QwtPoint3D point_hs = CData_hs.at(index);
-            point_hs.setZ(point_hs.z()-subtract);
-            CData_hs.replace(index,point_hs);
+            point_hs.setZ(point_hs.z() - subtract);
+            CData_hs.replace(index, point_hs);
             index--;
-         }
-         subtract += 16;
+        }
+        subtract += 16;
     }
     scheduleReplot();
 }
@@ -396,11 +412,14 @@ void Client::commitData()
     plotWidgetCBR->replot();
 
     QwtScaleWidget *scaleWidget = plotWidget->axisWidget(QwtPlot::xBottom);
-    if (scaleWidget) scaleWidget->repaint();
+    if (scaleWidget)
+        scaleWidget->repaint();
     QwtScaleWidget *scaleWidgetAL = plotWidgetAL->axisWidget(QwtPlot::xBottom);
-    if (scaleWidgetAL) scaleWidgetAL->repaint();
+    if (scaleWidgetAL)
+        scaleWidgetAL->repaint();
     QwtScaleWidget *scaleWidgetCBR = plotWidgetCBR->axisWidget(QwtPlot::xBottom);
-    if (scaleWidgetCBR) scaleWidgetCBR->repaint();
+    if (scaleWidgetCBR)
+        scaleWidgetCBR->repaint();
 
     if (complHS)
         scatterCompl->setSamples(CData_hs);
@@ -417,7 +436,8 @@ void Client::updateWebBrowsing0(bool toggled)
 
 void Client::updateWebBrowsing10(bool toggled)
 {
-    if (toggled) {
+    if (toggled)
+    {
         std::stringstream command;
         command << ssh_wb << "10 " << getLinkCap();
         _RUN_SCRIPT(command.str());
@@ -426,76 +446,109 @@ void Client::updateWebBrowsing10(bool toggled)
 
 void Client::updateWebBrowsing100(bool toggled)
 {
-    if (toggled) {
+    if (toggled)
+    {
         std::stringstream command;
         command << ssh_wb << "100 " << getLinkCap();
         _RUN_SCRIPT(command.str());
     }
 }
 
-void Client::readRTTList(){
+void Client::readRTTList()
+{
     std::ifstream infile(res_path("/config/ertt_list"));
-    if (infile.is_open()) {
+    if (infile.is_open())
+    {
         std::string rtt;
         int rttValue = -1;
-        while (!infile.eof()) {
+        while (!infile.eof())
+        {
             infile >> rtt;
-            if (atoi(rtt.c_str()) != rttValue) {
+            if (atoi(rtt.c_str()) != rttValue)
+            {
                 rttValue = atoi(rtt.c_str());
                 rttList.append(rtt.c_str());
                 rttValues.push_back(rttValue);
             }
         }
         infile.close();
-    } else
+    }
+    else
         std::cerr << "ERROR: 'rtt_list' file is missing or corrupted." << std::endl;
 }
 
-void Client::readCBRList(){
+void Client::readCBRList()
+{
     std::string cbr;
     int cbrValue = 0;
     cbrList.append("off");
     cbrValues.push_back(cbrValue);
 
     std::ifstream infile(res_path("/config/cbr_list"));
-    if (infile.is_open()) {
-       while (!infile.eof()) {
+    if (infile.is_open())
+    {
+        while (!infile.eof())
+        {
             infile >> cbr;
-            if (atoi(cbr.c_str()) != cbrValue) {
+            if (atoi(cbr.c_str()) != cbrValue)
+            {
                 cbrValue = atoi(cbr.c_str());
                 cbrList.append(cbr.c_str());
                 cbrValues.push_back(cbrValue);
             }
         }
         infile.close();
-    } else
+    }
+    else
         std::cerr << "ERROR: 'cbr_list' file is missing or corrupted." << std::endl;
 }
 
 void Client::readCCList()
 {
     std::ifstream infile(res_path("/config/cc_list"));
-    if (infile.is_open()) {
+    if (infile.is_open())
+    {
         std::string cc_name;
         std::string cc_command;
-        while (!infile.eof()){
+        while (!infile.eof())
+        {
             std::stringstream ss_cc_name;
             infile >> cc_name;
             ss_cc_name << cc_name;
             infile >> cc_name;
-            while (!infile.eof() && cc_name != ":") {
+            while (!infile.eof() && cc_name != ":")
+            {
                 ss_cc_name << " " << cc_name;
                 infile >> cc_name;
             }
-            if (!infile.eof()) {
+            if (!infile.eof())
+            {
                 infile >> cc_command;
                 ccList.append(ss_cc_name.str().c_str());
                 ccValues.push_back(cc_command);
             }
         }
         infile.close();
-    } else
+    }
+    else
         std::cerr << "ERROR: 'cc_list' file is missing or corrupted." << std::endl;
+}
+
+void Client::updateQos(int CS)
+{
+    switch (cs)
+    {
+    case 0:
+    case 1:
+        break;
+    case 2:
+        CS = 5;
+        break;
+    case 3:
+        CS = 7;
+        break;
+    }
+    std::cout << "CS setting is: " << CS << std::endl;
 }
 
 void Client::updateRTT(int num)
@@ -527,7 +580,6 @@ void Client::updateComplHS(bool value)
         scatterCompl->setSamples(CData_hs);
     else
         scatterCompl->setSamples(CData);
-
 }
 
 void Client::setComplHS(bool value)
@@ -558,7 +610,7 @@ void Client::updateCBR(int value)
 
 int Client::getCBRRate(int value)
 {
-    int rate = linkcap * cbrValues.at(value)/100;
+    int rate = linkcap * cbrValues.at(value) / 100;
     return rate;
 }
 

@@ -16,7 +16,6 @@
 #include <QCheckBox>
 #include <QRadioButton>
 
-
 class QLabel;
 class NoScaleDraw;
 class UnrelatedNumberScaleDraw;
@@ -25,12 +24,12 @@ class Client : public QGroupBox
 {
     Q_OBJECT
 public:
-    explicit Client(QWidget *parent, const char* download_path,
-		    const char* killall_path, const char* wb_path,
-		    const char* rtt_path, const char* cc_path,
-		    const char* al_path,
-		    const char* cbr_path,
-		    const QColor &color = Qt::blue, int init_cc=0);
+    explicit Client(QWidget *parent, const char *download_path,
+                    const char *killall_path, const char *wb_path,
+                    const char *rtt_path, const char *cc_path,
+                    const char *al_path,
+                    const char *cbr_path,
+                    const QColor &color = Qt::blue, int init_cc = 0);
     ~Client();
 
 signals:
@@ -40,8 +39,8 @@ signals:
 
 public slots:
     void updateSamples(std::vector<double> rsamples, double cbr_rate,
-		       double al_rate, QVector<QwtPoint3D>& csamples,
-		       QVector<QwtPoint3D>& csamples_hs);
+                       double al_rate, QVector<QwtPoint3D> &csamples,
+                       QVector<QwtPoint3D> &csamples_hs);
     void updateFairRate(double rate, QString caption);
 
 private slots:
@@ -51,6 +50,7 @@ private slots:
     void updateWebBrowsing0(bool toggled);
     void updateWebBrowsing10(bool toggled);
     void updateWebBrowsing100(bool toggled);
+    void updateQos(int num);
     void updateRTT(int num);
     void clearComplData();
     void setComplHS(bool value);
@@ -59,7 +59,6 @@ private slots:
     void updateCBR(int value);
     void updateLinkCap(int value);
     void updateCC(int value);
-
 
 private:
     void _setCC(const std::string name);
@@ -71,7 +70,6 @@ private:
     int getLinkCap();
     void cleanup() const;
 
-
     int linkcap;
 
     QwtText lbl;
@@ -80,11 +78,10 @@ private:
     NoScaleDraw *noScaleDrawAL;
     NoScaleDraw *noScaleDrawCBR;
 
-    UnrelatedNumberScaleDraw  *unrelatedNumberScaleDraw;
-    QVector< QVector< double > > samples;
-    QVector< double > sampleAL;
-    QVector< double > sampleCBR;
-
+    UnrelatedNumberScaleDraw *unrelatedNumberScaleDraw;
+    QVector<QVector<double>> samples;
+    QVector<double> sampleAL;
+    QVector<double> sampleCBR;
 
     QwtPlot *plotWidget;
     QwtPlot *plotWidgetAL;
@@ -92,7 +89,6 @@ private:
     QwtPlotMultiBarChart *barChart;
     QwtPlotBarChart *ALAppChart;
     QwtPlotBarChart *CBRAppChart;
-
 
     QwtPlot *plotCompl;
     QwtPlotSpectroCurve *scatterCompl;
@@ -135,7 +131,6 @@ private:
     QRadioButton *btnwb0;
     QRadioButton *btnwb10;
     QRadioButton *btnwb100;
-
 };
 
-#endif // CLIENT_H
+#endif

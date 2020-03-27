@@ -21,23 +21,23 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
 {
     _RUN_SCRIPT(res_path("/sh/prepare_endhosts.sh"));
     Client *dctcpclient = new Client(this,
-		    res_path("/sh/dctcp_download.sh").c_str(),
-		    res_path("/sh/killall_dctcp.sh").c_str(),
-		    res_path("/sh/wb_dctcp.sh ").c_str(),
-		    res_path("/sh/rtt_dctcp.sh").c_str(),
-		    res_path("/sh/cc_dctcp.sh").c_str(),
-		    res_path("/sh/al_dctcp.sh").c_str(),
-		    res_path("/sh/cbr_dctcp.sh").c_str(),
-		    Qt::blue, 0);
+                                     res_path("/sh/dctcp_download.sh").c_str(),
+                                     res_path("/sh/killall_dctcp.sh").c_str(),
+                                     res_path("/sh/wb_dctcp.sh ").c_str(),
+                                     res_path("/sh/rtt_dctcp.sh").c_str(),
+                                     res_path("/sh/cc_dctcp.sh").c_str(),
+                                     res_path("/sh/al_dctcp.sh").c_str(),
+                                     res_path("/sh/cbr_dctcp.sh").c_str(),
+                                     Qt::blue, 0);
     Client *cubicclient = new Client(this,
-		    res_path("/sh/cubic_download.sh").c_str(),
-		    res_path("/sh/killall_cubic.sh").c_str(),
-		    res_path("/sh/wb_cubic.sh ").c_str(),
-		    res_path("/sh/rtt_cubic.sh").c_str(),
-		    res_path("/sh/cc_cubic.sh").c_str(),
-		    res_path("/sh/al_cubic.sh").c_str(),
-		    res_path("/sh/cbr_cubic.sh").c_str(),
-		    QColor(255, 157, 0), 1);
+                                     res_path("/sh/cubic_download.sh").c_str(),
+                                     res_path("/sh/killall_cubic.sh").c_str(),
+                                     res_path("/sh/wb_cubic.sh ").c_str(),
+                                     res_path("/sh/rtt_cubic.sh").c_str(),
+                                     res_path("/sh/cc_cubic.sh").c_str(),
+                                     res_path("/sh/al_cubic.sh").c_str(),
+                                     res_path("/sh/cbr_cubic.sh").c_str(),
+                                     QColor(255, 157, 0), 1);
 
     QHBoxLayout *mainLayout = new QHBoxLayout;
     setLayout(mainLayout);
@@ -51,11 +51,11 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
     std::string server_b = safe_getenv("SERVER_B");
     std::stringstream dctcpTitle, cubicTitle;
     dctcpTitle
-	    << "$CLIENT_A [" << client_a
-	    << "] <> $SERVER_A [" << server_a << "]";
+        << "$CLIENT_A [" << client_a
+        << "] <> $SERVER_A [" << server_a << "]";
     cubicTitle
-	    << "$CLIENT_B [" << client_b
-	    << "] <> $SERVER_B [" << server_b << "]";
+        << "$CLIENT_B [" << client_b
+        << "] <> $SERVER_B [" << server_b << "]";
     dctcpclient->setTitle(dctcpTitle.str().c_str());
     firstColumn->addWidget(dctcpclient);
     firstColumn->setAlignment(dctcpclient, Qt::AlignTop);
@@ -94,8 +94,6 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
     complOptLayout->setAlignment(clearCompl, Qt::AlignBottom);
     optionsLayout->setAlignment(complOptLayout, Qt::AlignRight);
 
-
-
     firstColumn->addLayout(optionsLayout);
     firstColumn->setAlignment(optionsLayout, Qt::AlignBottom);
 
@@ -107,12 +105,11 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
     std::string dev = safe_getenv("IFACE");
     std::stringstream laqm_title;
     laqm_title
-	    << "Monitoring $IFACE[" << dev << "] "
-	    << "with $PCAPFILTER[" << pcapf << "]"
-	    << std::endl;
+        << "Monitoring $IFACE[" << dev << "] "
+        << "with $PCAPFILTER[" << pcapf << "]"
+        << std::endl;
     laqm->setTitle(laqm_title.str().c_str());
     secondColumn->addWidget(laqm);
-
 
     QGroupBox *toggleIPClassBox = new QGroupBox;
     toggleIPClassBox->setMaximumHeight(60);
@@ -127,7 +124,6 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
     toggleIPClassLayout->addWidget(bip);
     secondColumn->addWidget(toggleIPClassBox);
     secondColumn->setAlignment(toggleIPClassBox, Qt::AlignRight);
-
 
     QThread *generatorThread = new QThread();
     g = new DataGenerator(dctcpclient, cubicclient, laqm, dev, pcapf);
@@ -158,9 +154,9 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
 
 MainWindow::~MainWindow()
 {
-	_RUN_SCRIPT(res_path("/sh/kill_ssh.sh"));
-	delete g;
-	ScriptRunner::instance().stop();
+    _RUN_SCRIPT(res_path("/sh/kill_ssh.sh"));
+    delete g;
+    ScriptRunner::instance().stop();
 }
 
 void MainWindow::updateDctcpclientCC(std::string name)
@@ -180,23 +176,26 @@ void MainWindow::updateCubicclientCC(std::string name)
 void MainWindow::checkCC()
 {
     if ((dctcpclientCC == "dctcp" || dctcpclientCC == "cubic_ecn" ||
-	 dctcpclientCC == "prague") &&
-	(cubicclientCC == "cubic" || cubicclientCC == "reno" ||
-	 cubicclientCC == "bbr")) {
+         dctcpclientCC == "prague") &&
+        (cubicclientCC == "cubic" || cubicclientCC == "reno" ||
+         cubicclientCC == "bbr"))
+    {
         if (!becn->isChecked())
             becn->toggle();
         std::cout << "set checked ECN" << std::endl;
-    } else {
+    }
+    else
+    {
         if (!bip->isChecked())
             bip->toggle();
         std::cout << "set checked IP" << std::endl;
     }
 }
 
-int MainWindow::checkIfUp(const char* ip)
+int MainWindow::checkIfUp(const char *ip)
 {
     std::string command = res_path("/sh/check_if_up.sh");
     command = command + " " + ip;
     int res = system(command.c_str());
-    return res/256;
+    return res / 256;
 }
