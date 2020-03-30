@@ -18,6 +18,17 @@
 #include <errno.h>
 #include <string.h>
 
+/* We currently only check for the following CS codepoints for classifying type of service:
+* CS0 = 0x0 (defualt)
+* CS1 = 0x20
+* CS5 = 0xa0
+* CS7 = 0xe0
+* 
+* Additional, a mixed mode (0xff) randomly sets for each flow one of the four CS levels.
+*/
+#define CS_LEVELS 4
+static unsigned char tos = 0x0;
+
 int sockets[100000]; // Array holding the sockets to pass to the thread
 int samples[100000]; //Array holding the Pareto distribution samples file size to pass to the thread
 char buffer[50000]; // the send buffer, everyone can share as it is read only
@@ -59,7 +70,10 @@ int get_transfer_size(){
     return samples[(rand() % 100000)];
 }
 
+// create a struct or array to send mysampleindex and tos
 void send_to_socket(int mysampleindex){
+
+    const unsigned char mixed[] = {0x0, 0x20, 0xa0, 0xe0};
 
     int cur_sock = sockets[mysampleindex];
     int transfer_size = samples[mysampleindex++];
@@ -68,6 +82,14 @@ void send_to_socket(int mysampleindex){
     int err;
     int r_snd = 0;
     int j = 0;
+
+    if (tos == 0xff) {
+        tos = mixed[random() % CS_LEVELS];
+    }
+
+    if (!(setsockopt(cur_sock, IPPROTO_IP, IP_TOS, &tos, sizeof(tos)))) {
+      perror( "failed to set type of service" );
+    }
 
     while(bytes_xmt < transfer_size){
 
@@ -171,13 +193,14 @@ int main(int argc, char *argv[]){
   pthread_t test_server;
   long sampleindex = 0;
 
-  if(argc != 3){
+  if(argc != 4){
     fprintf(stderr,
-            "Usage: %s <HTTP Server port> <file with transfer sizes>\n", argv[0]);
+            "Usage: %s <HTTP Server port> <file with transfer sizes> <type of service> \n", argv[0]);
     exit(1);
   }
 
   port = atoi(argv[1]);
+  tos = atoi(argv[3]);
 
   initialize_distribution(argv[2]); //read the the Pareto distribution from file
 

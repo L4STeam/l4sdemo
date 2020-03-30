@@ -114,6 +114,7 @@ Client::Client(QWidget *parent, const char *download_path,
     qosSelect->addItem("CS1");
     qosSelect->addItem("CS5");
     qosSelect->addItem("CS7");
+    qosSelect->addItem("Mixed");
     downloadsBoxLayout->addWidget(titleQos);
     downloadsBoxLayout->addWidget(qosSelect);
 
@@ -446,6 +447,9 @@ void Client::updateWebBrowsing0(bool toggled)
     case 3:
         CS = 0xe0;
         break;
+    case 4:
+        CS = 0xff;
+        break;
     }
 
     if (toggled)
@@ -474,6 +478,9 @@ void Client::updateWebBrowsing10(bool toggled)
     case 3:
         CS = 0xe0;
         break;
+    case 4:
+        CS = 0xff;
+        break;
     }
 
     if (toggled)
@@ -501,6 +508,9 @@ void Client::updateWebBrowsing100(bool toggled)
         break;
     case 3:
         CS = 0xe0;
+        break;
+    case 4:
+        CS = 0xff;
         break;
     }
 
@@ -612,6 +622,9 @@ void Client::updateQos(int CS)
         break;
     case 3:
         CS = 0xe0;
+        break;
+    case 4:
+        CS = 0xff;
         break;
     }
 
