@@ -71,6 +71,7 @@ private:
     int getCBRRate(int value);
     int getLinkCap();
     void cleanup() const;
+    int getQosMode(int);
 
 
     int linkcap;

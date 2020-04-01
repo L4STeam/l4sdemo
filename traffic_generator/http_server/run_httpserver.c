@@ -20,14 +20,20 @@
 
 /* We currently only check for the following CS codepoints for classifying type of service:
 * CS0 = 0x0 (defualt)
-* CS1 = 0x20
-* CS5 = 0xa0
-* CS7 = 0xe0
+* CS1 = 0x8
+* CS5 = 0x28
+* CS7 = 0x38
 * 
-* Additional, a mixed mode (0xff) randomly sets for each flow one of the four CS levels.
+* Additionally, a mixed mode (0xff) randomly sets for each flow one of the four CS levels.
 */
+#define CS0 0x0
+#define CS1 0x20
+#define CS5 0xa0
+#define CS7 0xe0
+
 #define CS_LEVELS 4
-static unsigned char tos = 0x0;
+static unsigned char tos = CS0;
+static unsigned char mode = CS0;
 
 int sockets[100000]; // Array holding the sockets to pass to the thread
 int samples[100000]; //Array holding the Pareto distribution samples file size to pass to the thread
@@ -73,8 +79,6 @@ int get_transfer_size(){
 // create a struct or array to send mysampleindex and tos
 void send_to_socket(int mysampleindex){
 
-    const unsigned char mixed[] = {0x0, 0x20, 0xa0, 0xe0};
-
     int cur_sock = sockets[mysampleindex];
     int transfer_size = samples[mysampleindex++];
     int transmit_bytes = transfer_size;
@@ -83,12 +87,16 @@ void send_to_socket(int mysampleindex){
     int r_snd = 0;
     int j = 0;
 
-    if (tos == 0xff) {
-        tos = mixed[random() % CS_LEVELS];
-    }
+    /* set type of service */
+    const unsigned char mixed[] = {CS0, CS1, CS5, CS7};
 
-    if (!(setsockopt(cur_sock, IPPROTO_IP, IP_TOS, &tos, sizeof(tos)))) {
-      perror( "failed to set type of service" );
+    if (mode == 0xff)
+      tos = mixed[random() % CS_LEVELS];
+    else
+      tos = mode;
+    
+    if ((setsockopt(cur_sock, IPPROTO_IP, IP_TOS, &tos, sizeof(tos))) < 0) {
+      fprintf(stderr, "failed to set type of service: %s\n", strerror(errno));
     }
 
     while(bytes_xmt < transfer_size){
@@ -119,6 +127,7 @@ void send_to_socket(int mysampleindex){
                   break;
               }
           }
+
       }
 
       bytes_xmt += err;
@@ -200,7 +209,7 @@ int main(int argc, char *argv[]){
   }
 
   port = atoi(argv[1]);
-  tos = atoi(argv[3]);
+  mode = atoi(argv[3]);
 
   initialize_distribution(argv[2]); //read the the Pareto distribution from file
 

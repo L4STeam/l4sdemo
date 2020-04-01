@@ -429,28 +429,39 @@ void Client::commitData()
     plotCompl->replot();
 }
 
-void Client::updateWebBrowsing0(bool toggled)
-{
-    int CS = 0x0;
+/* We currently only check for the following CS codepoints for classifying type of service:
+* CS0 = 0x0 (defualt)
+* CS1 = 0x20
+* CS5 = 0xa0
+* CS7 = 0xe0
+*/
+#define CS0 0x0
+#define CS1 0x20
+#define CS5 0xa0
+#define CS7 0xe0
+#define MIXED 0xff
 
-    switch (qosSelect->currentIndex())
+int Client::getQosMode(int index) {
+    switch (index) 
     {
     case 0:
-        CS = 0x0;
-        break;
+        return CS0;
     case 1:
-        CS = 0x20;
-        break;
+        return CS1;
     case 2:
-        CS = 0xa0;
-        break;
+        return CS5;
     case 3:
-        CS = 0xe0;
-        break;
+        return CS7;
     case 4:
-        CS = 0xff;
-        break;
+        return MIXED;
+    default:
+        return CS0;
     }
+}
+
+void Client::updateWebBrowsing0(bool toggled)
+{
+    int CS = getQosMode(qosSelect->currentIndex());
 
     if (toggled)
     {
@@ -462,26 +473,7 @@ void Client::updateWebBrowsing0(bool toggled)
 
 void Client::updateWebBrowsing10(bool toggled)
 {
-    int CS = 0x0;
-
-    switch (qosSelect->currentIndex())
-    {
-    case 0:
-        CS = 0x0;
-        break;
-    case 1:
-        CS = 0x20;
-        break;
-    case 2:
-        CS = 0xa0;
-        break;
-    case 3:
-        CS = 0xe0;
-        break;
-    case 4:
-        CS = 0xff;
-        break;
-    }
+    int CS = getQosMode(qosSelect->currentIndex());
 
     if (toggled)
     {
@@ -493,26 +485,7 @@ void Client::updateWebBrowsing10(bool toggled)
 
 void Client::updateWebBrowsing100(bool toggled)
 {
-    int CS = 0x0;
-
-    switch (qosSelect->currentIndex())
-    {
-    case 0:
-        CS = 0x0;
-        break;
-    case 1:
-        CS = 0x20;
-        break;
-    case 2:
-        CS = 0xa0;
-        break;
-    case 3:
-        CS = 0xe0;
-        break;
-    case 4:
-        CS = 0xff;
-        break;
-    }
+    int CS = getQosMode(qosSelect->currentIndex());
 
     if (toggled)
     {
@@ -606,6 +579,7 @@ void Client::readCCList()
 * CS1 = 0x20
 * CS5 = 0xa0
 * CS7 = 0xe0
+*
 */
 void Client::updateQos(int CS)
 {
