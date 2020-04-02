@@ -1,10 +1,8 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-//#include <linux/types.h>
 #include <assert.h>
 #include <sys/time.h>
-// #include <stropts.h> No longer supported, refer to https://bugzilla.redhat.com/show_bug.cgi?id=656245
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
@@ -17,6 +15,8 @@
 #include <sys/uio.h>
 #include <errno.h>
 #include <string.h>
+
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 /* We currently only check for the following CS codepoints for classifying type of service:
 * CS0 = 0x0 (defualt)
@@ -31,7 +31,6 @@
 #define CS5 0xa0
 #define CS7 0xe0
 
-#define CS_LEVELS 4
 static unsigned char tos = CS0;
 static unsigned char mode = CS0;
 
@@ -89,6 +88,7 @@ void send_to_socket(int mysampleindex){
 
     /* set type of service */
     const unsigned char mixed[] = {CS0, CS1, CS5, CS7};
+    const int CS_LEVELS = ARRAY_SIZE(mixed);
 
     if (mode == 0xff)
       tos = mixed[random() % CS_LEVELS];
