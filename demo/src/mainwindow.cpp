@@ -146,7 +146,6 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
     connect(laqm, SIGNAL(linkChanged(int)), g, SLOT(updateLinkCap(int)));
     connect(laqm, SIGNAL(linkChanged(int)), dctcpclient, SLOT(updateLinkCap(int)));
     connect(laqm, SIGNAL(linkChanged(int)), cubicclient, SLOT(updateLinkCap(int)));
-    connect(this, SIGNAL(updateTA(bool)), g, SLOT(startTA(bool)));
     connect(dctcpclient, SIGNAL(ccChanged(std::string)), this, SLOT(updateDctcpclientCC(std::string)));
     connect(cubicclient, SIGNAL(ccChanged(std::string)), this, SLOT(updateCubicclientCC(std::string)));
 

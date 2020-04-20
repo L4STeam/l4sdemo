@@ -11,7 +11,6 @@ class DemoData
 public:
     explicit DemoData();
 
-    bool ipclass;
     std::vector<double> ecn_th;
     std::vector<double> nonecn_th;
     std::vector<double> ecn_w;

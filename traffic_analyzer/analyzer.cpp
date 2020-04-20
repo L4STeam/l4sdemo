@@ -59,10 +59,9 @@ uint64_t getStamp()
 }
 
 ThreadParam::ThreadParam(uint32_t sinterval, std::string folder,
-			 bool ipc, uint32_t nrs)
+			 uint32_t nrs)
 	: m_sinterval(sinterval)
 	, m_folder(folder)
-	, ipclass(ipc)
 	, m_nrs(nrs)
 	, quiet(false)
 {
@@ -171,8 +170,8 @@ parse_ip: {
     daddr = iph->daddr;
     ts = iph->tos & INET_ECN_MASK;
     mark = (ts == INET_ECN_CE);
-    if (tp->ipclass)
-        ts = ntohl(saddr);
+    //For convenience, we only use IP classification
+    ts = ntohl(saddr);
     uint16_t id = ntohs(iph->id);
     drops = decodeDrops(id >> 11); // drops stored in 5 bits MSB
     // We don't decode queueing delay here as we need to store it in a table,

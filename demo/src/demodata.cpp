@@ -2,7 +2,6 @@
 
 DemoData::DemoData()
 {
-    ipclass = 0;
     pthread_mutexattr_t errorcheck;
     pthread_mutexattr_init(&errorcheck);
     pthread_mutex_init(&mutex, &errorcheck);

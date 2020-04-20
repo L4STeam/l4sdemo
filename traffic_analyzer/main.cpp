@@ -33,14 +33,11 @@ int main(int argc, char **argv)
     std::cout << "pcap filter: " << pcapfilter << std::endl;
 
     if (argc > 5)
-        ipclass = (argv[5][0] == 't');
-
-    if (argc > 6)
-        nrs = atoi(argv[6]);
+        nrs = atoi(argv[5]);
 
     mkdir(folder.c_str(), 0777);
 
-    ThreadParam *param = new ThreadParam(sinterval, folder, ipclass, nrs); 
+    ThreadParam *param = new ThreadParam(sinterval, folder, nrs); 
 
     setup_pcap(param, dev, pcapfilter);
     start_analysis(param);

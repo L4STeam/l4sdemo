@@ -125,7 +125,7 @@ public:
 };
 
 struct ThreadParam {
-    ThreadParam(uint32_t sinterval, std::string folder, bool ipc, uint32_t nrs);
+    ThreadParam(uint32_t sinterval, std::string folder, uint32_t nrs);
 
     // table of qdelay values (no need to decode all the time..)
     int qdelay_decode_table[QS_LIMIT];
@@ -139,7 +139,6 @@ struct ThreadParam {
     pcap_t* m_descr;
     uint32_t m_sinterval;
     std::string m_folder;
-    bool ipclass;
     uint32_t m_nrs;
     std::map<SrcDst,std::vector<FlowData>> fd_pf_ecn;
     std::map<SrcDst,std::vector<FlowData>> fd_pf_nonecn;
