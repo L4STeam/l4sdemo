@@ -26,13 +26,10 @@ public:
     ~DataGenerator();
 
 public slots:
-    void startTA(bool ipc = false);
-    void updateTA(bool ipc);
+    void startTA();
     void startCompl();
     void setShowRate(bool toggled);
     void setShowWindow(bool toggled);
-    void setECNClass(bool toggled);
-    void setIPClass(bool toggled);
     void updateData();
     void updateLinkCap(int linkcap);
     void updateDctcpRtt(int value);

@@ -6,11 +6,10 @@
 
 
 TrafficAnalyzer::TrafficAnalyzer(QObject *parent, ThreadParam *param,
-				 DemoData *demodata, bool cl)
+				 DemoData *demodata)
     : QObject(parent)
     , tp(param)
-    , demo_data(demodata)
-    , ipc (cl) {}
+    , demo_data(demodata){}
 
 void TrafficAnalyzer::start()
 {

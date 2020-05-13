@@ -14,7 +14,7 @@ class TrafficAnalyzer : public QObject
     Q_OBJECT
 public:
     explicit TrafficAnalyzer(QObject *parent = 0, ThreadParam *param = 0,
-			     DemoData *demodata = 0, bool cl = 0);
+			     DemoData *demodata = 0);
 
 public slots:
     void start();
@@ -22,7 +22,6 @@ public slots:
 private:
     ThreadParam *tp;
     DemoData *demo_data;
-    bool ipc;
 };
 
 #endif // TRAFFICANALYZER_H

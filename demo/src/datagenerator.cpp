@@ -33,20 +33,19 @@ DataGenerator::~DataGenerator()
      delete compl_c_data;
 }
 
-void DataGenerator::startTA(bool ipc)
+void DataGenerator::startTA()
 {
     uint32_t sinterval = 1000;
     uint32_t nrs = 0;
     std::string folder = safe_getenv("TA_DEMO_FOLDER", "demo");
 
-    tp = new ThreadParam(sinterval, folder, false, nrs);
+    tp = new ThreadParam(sinterval, folder, nrs);
     tp->quiet = !getenv_has_key("VERBOSE");
     setThreadParam(tp);
     demo_data = new DemoData();
-    demo_data->ipclass = ipc;
     taThread = new QThread();
     tastatThread = new QThread();
-    ta = new TrafficAnalyzer(0, tp, demo_data, ipc);
+    ta = new TrafficAnalyzer(0, tp, demo_data);
     tastat = new TrafficAnalyzerStat(tp, demo_data);
     connect(tastat, SIGNAL(dataReady()), this, SLOT(updateData()));
     ta->moveToThread(taThread);
@@ -59,12 +58,6 @@ void DataGenerator::startTA(bool ipc)
     tastatThread->start();
 }
 
-void DataGenerator::updateTA(bool ipc)
-{
-	pthread_mutex_lock(&tp->m_mutex);
-        tp->ipclass = ipc;
-        pthread_mutex_unlock(&tp->m_mutex);
-}
 void DataGenerator::startCompl()
 {
     complLLThread = new QThread();
@@ -132,16 +125,7 @@ void DataGenerator::setShowWindow(bool toggled)
 
     pthread_mutex_unlock(&showrate_mutex);
 }
-void DataGenerator::setECNClass(bool toggled)
-{
-    if (toggled == true)
-        updateTA(false);
-}
-void DataGenerator::setIPClass(bool toggled)
-{
-    if (toggled == true)
-        updateTA(true);
-}
+
 void DataGenerator::updateLinkCap(int linkcap)
 {
      pthread_mutex_lock(&demo_data->mutex);
