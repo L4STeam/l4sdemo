@@ -7,7 +7,7 @@
 
 void usage(int argc, char* argv[])
 {
-    printf("Usage: %s <dev> <pcap filter exp> <output folder> <sample interval (ms)> <ipclass> [nrsamples]\n", argv[0]);
+    printf("Usage: %s <dev> <pcap filter exp> <output folder> <sample interval (ms)> [nrsamples]\n", argv[0]);
     printf("pcap filter: what to capture. ex.: \"ip and src net 10.187.255.0/24\"\n");
     printf("If nrsamples is not specified, the samples will be recorded until interrupted\n");
     exit(1);
@@ -17,7 +17,6 @@ int main(int argc, char **argv)
 {
     char *dev;
     uint32_t sinterval;
-    bool ipclass = false;
     uint32_t nrs = 0;
 
 
