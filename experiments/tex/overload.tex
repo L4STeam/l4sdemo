@@ -1,0 +1,29 @@
+\newcommand{\plotoverload}[3]{
+\begin{figure*}[!ht]
+    % \vspace{1cm}
+    \centering
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{#1/qd_o.eps}
+    \end{subfigure}%
+
+     \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{#1/ls_o.eps}
+    \end{subfigure}%
+    
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{#1/ws_o.eps}
+    \end{subfigure}%
+
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{#1/ts_o.eps}
+    \end{subfigure}%
+   
+    \caption{#2}
+    \label{fig:#3}
+     %\vspace{2cm}
+\end{figure*}
+}

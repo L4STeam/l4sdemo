@@ -1,0 +1,276 @@
+\newcommand{\plotctexp}[4]{
+\begin{figure*}[h]
+    % \vspace{1cm}
+    \centering
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=0.95\textwidth]{#1/ct_#2_link4.eps}
+        \caption{4Mbps link capacity}
+    \end{subfigure}%
+
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=0.95\textwidth]{#1/ct_#2_link12.eps}
+        \caption{12Mbps link capacity}
+    \end{subfigure}%
+
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=0.95\textwidth]{#1/ct_#2_link40.eps}
+        \caption{40Mbps link capacity}
+    \end{subfigure}%
+
+       \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=0.95\textwidth]{#1/ct_#2_link120.eps}
+        \caption{120 Mbps link capacity}
+    \end{subfigure}%
+
+
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=0.95\textwidth]{#1/ct_#2_link200.eps}
+        \caption{200 Mbps link capacity}
+    \end{subfigure}%
+
+    
+    \caption{#3     (\detokenize{#2})}
+    \label{fig:#4}
+     %\vspace{1cm}
+\end{figure*}
+}
+
+\newcommand{\plothlexp}[4]{
+\begin{figure*}[h]
+    % \vspace{1cm}
+    \centering
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{#1/tb_#2_aqm.eps}
+    \end{subfigure}%
+
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{#1/ts_#2_aqm.eps}
+    \end{subfigure}%
+
+     \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{#1/wb_#2_aqm.eps}
+    \end{subfigure}%
+
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{#1/ws_#2_aqm.eps}
+    \end{subfigure}%
+
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{#1/qd_#2_aqm.eps}
+    \end{subfigure}%
+
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{#1/ut_#2_aqm.eps}
+    \end{subfigure}%
+
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{#1/ls_#2_aqm.eps}
+    \end{subfigure}%
+
+    \caption{#3     (\detokenize{#2})}
+    \label{fig:hl#4}
+     %\vspace{2cm}
+\end{figure*}
+}
+
+
+\newcommand{\plotdetailed}[4]{
+\begin{figure*}[h]
+    % \vspace{1cm}
+    \centering
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{#1/rate_#2_200_100_r#3.eps}
+    \end{subfigure}%
+
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{#1/ls_#2_200_100_r#3.eps}
+    \end{subfigure}%
+
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{#1/qd_#2_#4_200_100_r#3.eps}
+    \end{subfigure}%
+    \caption{#2 #4    (\detokenize{#3})}
+
+    \label{fig:hl#2#4#3}
+     %\vspace{2cm}
+\end{figure*}
+}
+
+\newcommand{\plotdetailedcc}[4]{
+\begin{figure*}[h]
+    % \vspace{1cm}
+    \centering
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{#1/rate_#2_#4_200_100_r#3.eps}
+    \end{subfigure}%
+
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{#1/ls_#2_#4_200_100_r#3.eps}
+    \end{subfigure}%
+
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{#1/qd_#2_#4_200_100_r#3.eps}
+    \end{subfigure}%
+        \caption{#2  #4   (\detokenize{#3})}
+
+    \label{fig:hl#2#4#3}
+     %\vspace{2cm}
+\end{figure*}
+}
+
+
+\newcommand{\plotsamertt}[4]{
+\begin{figure*}[!ht]
+    % \vspace{1cm}
+    \centering
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=0.95\textwidth]{#1/qd_#2.eps}
+    \end{subfigure}%
+
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=0.95\textwidth]{#1/ut_#2.eps}
+    \end{subfigure}%
+
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=0.95\textwidth]{#1/ws_#2.eps}
+    \end{subfigure}%
+
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=0.95\textwidth]{#1/ts_#2.eps}
+    \end{subfigure}%
+
+     \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=0.95\textwidth]{#1/ls_#2.eps}
+    \end{subfigure}%
+
+   
+    \caption{#3     (\detokenize{#2})}
+    \label{fig:#4}
+     %\vspace{2cm}
+\end{figure*}
+}
+
+\newcommand{\plotsamertth}[4]{
+\begin{figure*}[!ht]
+    % \vspace{1cm}
+    \centering
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=0.95\textwidth]{#1/qd_#2_aqm.eps}
+    \end{subfigure}%
+
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=0.95\textwidth]{#1/ut_#2_aqm.eps}
+    \end{subfigure}%
+
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=0.95\textwidth]{#1/ws_#2_aqm.eps}
+    \end{subfigure}%
+    
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=0.95\textwidth]{#1/ls_#2_aqm.eps}
+    \end{subfigure}%
+
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=0.95\textwidth]{#1/ct_#2_link40.eps}
+    \end{subfigure}%
+
+   
+    \caption{#3     (\detokenize{#2})}
+    \label{fig:#4}
+     %\vspace{2cm}
+\end{figure*}
+}
+
+
+\newcommand{\plotextra}[3]{
+    \begin{figure*}[h]
+    % \vspace{1cm}   
+    \centering 
+    \begin{subfigure}[b]{\textwidth}
+        % \vspace{1cm}
+        \centering
+        \includegraphics[width=\linewidth]{#1/ts_link40_rtt10.eps}
+            \label{fig:#3-ws}
+        \end{subfigure}%
+
+    \begin{subfigure}[b]{\textwidth}
+
+        \centering
+        \includegraphics[width=\linewidth]{#1/ws_link40_rtt10.eps}
+        \label{fig:#3-ts}
+
+    \end{subfigure}%
+
+    \begin{subfigure}[b]{\textwidth}
+        % \vspace{1cm}
+        \centering
+        \includegraphics[width=\linewidth]{#1/tb_link40_rtt10.eps}
+            \label{fig:#3-ws}
+        \end{subfigure}%
+
+    \begin{subfigure}[b]{\textwidth}
+
+        \centering
+        \includegraphics[width=\linewidth]{#1/wb_link40_rtt10.eps}
+        \label{fig:#3-ts}
+
+    \end{subfigure}%
+
+        \caption{Normalised rate and window size per flow. 40Mbps link capacity, 10ms RTT. #2}
+            \label{fig:#3}
+
+    \end{figure*}
+
+}
+
+\newcommand{\plotccdf}[3]{
+    \begin{figure*}[h]
+    % \vspace{1cm}   
+    \centering 
+    
+        \includegraphics[width=\linewidth]{#1/ccdf.eps}
+
+        \caption{Queue delay CCDF. 120Mbps link capacity, 10ms RTT. #2}
+            \label{fig:#3}
+
+    \end{figure*}
+
+}
+
+\newcommand{\plotaller}[3]{
+    \plotctexp{#1/plots_er}{1h-1h}{#2}{#3-ct}\clearpage
+
+    \plothlexp{#1/plots_er}{1-1}{#2}{#3-1-1}\clearpage
+    \plothlexp{#1/plots_er}{1h-1h}{#2}{#3-1h-1h}\clearpage
+    \plotextra{#1/plots_extra}{#2}{#3-extra}
+    \plotccdf{#1/plots_ccdf}{#2}{#3-ccdf}
+
+}

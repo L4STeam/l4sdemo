@@ -1,0 +1,69 @@
+
+\newcommand{\plotmrtttw}[4]{
+\begin{figure*}[!ht]
+    % \vspace{1cm}
+    \centering
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{#1/ws_#2.eps}
+    \end{subfigure}%
+
+     \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{#1/wb_#2.eps}
+    \end{subfigure}%
+    
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{#1/ts_#2.eps}
+    \end{subfigure}%
+
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{#1/tb_#2.eps}
+    \end{subfigure}%
+   
+    \caption{#3     (\detokenize{#2})}
+    \label{fig:#4-1}
+     %\vspace{2cm}
+\end{figure*}
+}
+
+
+\newcommand{\plotmrttqlu}[4]{
+\begin{figure*}[!ht]
+    % \vspace{1cm}
+    \centering
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{#1/qd_#2.eps}
+    \end{subfigure}%
+
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{#1/ut_#2.eps}
+    \end{subfigure}%
+
+    
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{#1/ls_#2.eps}
+    \end{subfigure}%
+
+      
+
+   
+    \caption{#3     (\detokenize{#2})}
+    \label{fig:#4-2}
+     %\vspace{2cm}
+\end{figure*}
+}
+
+\newcommand{\plotallmr}[4]{
+    \plotmrtttw{#1}{#2}{#3}{#4}
+    \plotmrttqlu{#1}{#2}{#3}{#4}
+}
+
+
+
+

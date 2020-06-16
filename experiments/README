@@ -1,0 +1,3 @@
+Before running the experiments, run init.sh
+Edit start_experiments.sh to specify which experiments to include and run it.
+TODO: make a proper README
