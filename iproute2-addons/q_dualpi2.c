@@ -266,7 +266,7 @@ static int dualpi2_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 		SPRINT_BUF(target_t);
 
 		if (!rtt_typ)
-			rtt_typ = max(rtt_max / RTT_TYP_TO_MAX, 1U);
+			rtt_typ = fmax(rtt_max / RTT_TYP_TO_MAX, 1U);
 		else if (!rtt_max)
 			rtt_max = rtt_typ * RTT_TYP_TO_MAX;
 		else if (rtt_typ > rtt_max) {
@@ -278,7 +278,7 @@ static int dualpi2_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 			fprintf(stderr, "rtt_max is specified, ignoring values "
 				"specified for alpha/beta/tupdate/target\n");
 		target = rtt_typ;
-		tupdate = max(min(rtt_typ, rtt_max / 3), 1U);
+		tupdate = fmax(min(rtt_typ, rtt_max / 3), 1U);
 		alpha_f = (double)tupdate / ((double)rtt_max * rtt_max)
 			* TIME_UNITS_PER_SEC * 0.1f;
 		beta_f = 0.3f / (float)rtt_max * TIME_UNITS_PER_SEC;
