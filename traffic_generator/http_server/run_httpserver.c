@@ -60,8 +60,8 @@ int get_transfer_size(){
     return samples[(rand() % 100000)];
 }
 
-void send_to_socket(int mysampleindex){
-
+void send_to_socket(int *index){
+    int mysampleindex = *index;
     int cur_sock = sockets[mysampleindex];
     int transfer_size = samples[mysampleindex++];
     int transmit_bytes = transfer_size;
@@ -210,7 +210,7 @@ int main(int argc, char *argv[]){
 
     /* Create a new thread to handle the request */
     if((err = pthread_create( &(test_server), NULL,
-                              (void*)send_to_socket, (void*)sampleindex)) != 0){
+                              (void*)send_to_socket, (void*)&sampleindex)) != 0){
 
       perror("pthread_create:");
       }

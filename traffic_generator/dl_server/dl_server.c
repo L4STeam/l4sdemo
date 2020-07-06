@@ -23,8 +23,9 @@ char buffer[1448]; /* Typical MSS on ethernet*/
 
 
 
-void send_to_socket(int cur_sock){
+void send_to_socket(int *sock){
 
+    int cur_sock = *sock;
     int err;
 
     while(1){
@@ -152,7 +153,7 @@ int main(int argc, char *argv[]){
 
     /* Create a new thread to handle the request */
     if((err = pthread_create( &(test_server), NULL,
-                              (void*)send_to_socket, (void*)socketh)) != 0){
+                              (void*)send_to_socket, (void*)&socketh)) != 0){
 
       perror("pthread_create:");
       }
