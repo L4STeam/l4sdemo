@@ -31,10 +31,10 @@ if [ -x "environment.local" ]; then
 fi
 
 if [ -f "${SSH_KEY}" ]; then
-    if [ "${SSH_AGENT_PID}x" == "x" ] && ! ps -p $SSH_AGENT_PID > /dev/null; then
+#    if [ "${SSH_AGENT_PID}x" == "x" ] && ! ps -p $SSH_AGENT_PID > /dev/null; then
         eval $(ssh-agent -s)
         ssh-add "${SSH_KEY}"
-    fi
+ #   fi
 fi
 
 # The following variables should be good as-is
