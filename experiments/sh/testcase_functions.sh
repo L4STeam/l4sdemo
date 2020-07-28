@@ -38,7 +38,7 @@ kill_processes() {
         ssh $SERVER_A 'sudo killall dl_server'
         sleep 0.5
 
-	killall analyzer
+	sudo killall analyzer
 }
 
 set_dyn_captions_mix() {
