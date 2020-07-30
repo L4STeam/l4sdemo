@@ -6,8 +6,8 @@ interface_options() {
 	echo "changing interface options (gro, gso, tso) to $enabled"
 	for o in "gro" "gso" "tso"; do
 		echo "option: $o"
-		sudo ethtool -K eth2 $o $enabled
-		sudo ethtool -K eth1 $o $enabled
+		sudo ethtool -K $IFACE $o $enabled
+		sudo ethtool -K $REV_IFACE $o $enabled
 		echo "setting option on the servers and clients"
 		ssh -t $SERVER_A "sudo ethtool -K em2 $o $enabled"
 		ssh -t $SERVER_B "sudo ethtool -K eno2 $o $enabled"
@@ -75,17 +75,16 @@ set_aqm() {
 	do_exec "sudo ../iproute2-l4s/tc/tc qdisc add dev $IFACE parent 1:10 $aqmname2 limit 40000 $aqmpars"
 	
 	#set extra rtt
-	aqmnode="10.187.16.1"
-	do_exec "sudo tc qdisc del dev eth1 root"
-	do_exec "sudo tc qdisc add dev eth1 root handle 1: prio bands 3"		
-        do_exec "sudo tc qdisc add dev eth1 parent 1:1 handle 11: netem delay 0ms limit 40000"
-        do_exec "sudo tc qdisc add dev eth1 parent 1:2 handle 12: netem delay ${rtt2}.0ms limit 40000"
-		do_exec "sudo tc filter add dev eth1 protocol ip parent 1:0 prio 1 u32 match ip src ${aqmnode} classid 1:1"
-        do_exec "sudo tc filter add dev eth1 protocol ip parent 1:0 prio 1 u32 match ip dst ${aqmnode} classid 1:1"
-        do_exec "sudo tc filter add dev eth1 protocol ip parent 1:0 prio 1 u32 match ip src ${SERVER_A} classid 1:2"
-        do_exec "sudo tc filter add dev eth1 protocol ip parent 1:0 prio 1 u32 match ip dst ${SERVER_A} classid 1:2"
-        do_exec "sudo tc filter add dev eth1 protocol ip parent 1:0 prio 1 u32 match ip src ${SERVER_B} classid 1:2"
-        do_exec "sudo tc filter add dev eth1 protocol ip parent 1:0 prio 1 u32 match ip dst ${SERVER_B} classid 1:2"
+	do_exec "sudo tc qdisc del dev $REV_IFACE root"
+	do_exec "sudo tc qdisc add dev $REV_IFACE root handle 1: prio bands 3"
+        do_exec "sudo tc qdisc add dev $REV_IFACE parent 1:1 handle 11: netem delay 0ms limit 40000"
+        do_exec "sudo tc qdisc add dev $REV_IFACE parent 1:2 handle 12: netem delay ${rtt2}.0ms limit 40000"
+		do_exec "sudo tc filter add dev $REV_IFACE protocol ip parent 1:0 prio 1 u32 match ip src ${AQMNODE} classid 1:1"
+        do_exec "sudo tc filter add dev $REV_IFACE protocol ip parent 1:0 prio 1 u32 match ip dst ${AQMNODE} classid 1:1"
+        do_exec "sudo tc filter add dev $REV_IFACE protocol ip parent 1:0 prio 1 u32 match ip src ${SERVER_A} classid 1:2"
+        do_exec "sudo tc filter add dev $REV_IFACE protocol ip parent 1:0 prio 1 u32 match ip dst ${SERVER_A} classid 1:2"
+        do_exec "sudo tc filter add dev $REV_IFACE protocol ip parent 1:0 prio 1 u32 match ip src ${SERVER_B} classid 1:2"
+        do_exec "sudo tc filter add dev $REV_IFACE protocol ip parent 1:0 prio 1 u32 match ip dst ${SERVER_B} classid 1:2"
 	do_exec "../iproute2-l4s/tc/tc qdisc"
 }
 	

@@ -276,8 +276,8 @@ function copy_data_line_m() {
 			filecontent=""
 			for rtt in "${rtt_array[@]}"; do
 				folder="${mainfolder}/${aqmname}_*_${link}_${rtt}/mix_1000/"${foldername}_static
-				sudo ./calc_qpd $folder 0
-				sudo ./calc_mix $folder $link $rtt $rtt $a_flows $b_flows
+				sudo ../stats/calc_qpd $folder 0
+				sudo ../stats/calc_mix $folder $link $rtt $rtt $a_flows $b_flows
 				line=$(cat ${folder}/rr)
 				filecontent=${filecontent}${rtt}" "${line}$'\n'
 			done
@@ -413,7 +413,7 @@ function copy_data_line_m() {
 					folder="${mainfolder}/${aqmname}_*_${link}_${rtt}/mix_completion/${foldername}"
 					avgrate_a=$(cat ${mainfolder}/${aqmname}_*_${link}_${rtt}/mix_1000/${foldername}/avgrate_a)
 					avgrate_b=$(cat ${mainfolder}/${aqmname}_*_${link}_${rtt}/mix_1000/${foldername}/avgrate_a)
-					sudo ./compl $folder $avgrate_a $avgrate_b $rtt $link
+					sudo ../stats/compl $folder $avgrate_a $avgrate_b $rtt $link
 				
 					filecontent_a=$(cat ${folder}/compl_bins_a_hs)
 					echo "$filecontent_a" > ${filename_a}
@@ -479,8 +479,8 @@ function copy_data_line_mr2() {
 			
 				folder="${mainfolder}/${aqmname}_*_${link}_0/mix_1000_d${aport}_r${bport}"
 				
-				sudo ./calc_qpd $folder 0
-				sudo ./calc_mix $folder $link $rtt_a $rtt_b $a_flows $b_flows
+				sudo ../stats/calc_qpd $folder 0
+				sudo ../stats/calc_mix $folder $link $rtt_a $rtt_b $a_flows $b_flows
 				
 				#TB
 				if [ "$bport" != "0" ]; then
@@ -590,8 +590,8 @@ function copy_data_link40_rtt10_extra() {
 		gen_foldername_id
 		#TB
 		folder="${mainfolder}/${aqmname}_*_${link}_${rtt}/mix_1000/"${foldername}
-		sudo ./calc_qpd $folder 0
-		sudo ./calc_mix $folder $link $rtt $rtt $a_flows $b_flows
+		sudo ../stats/calc_qpd $folder 0
+		sudo ../stats/calc_mix $folder $link $rtt $rtt $a_flows $b_flows
 		line=$(cat ${folder}/rr)
 		filecontent_tb=${filecontent_tb}A${a_flows}-B${b_flows}" "${line}$'\n'
 		#WB
@@ -715,17 +715,17 @@ function copy_data_line_o() {
 			filename=${targetfolder}"/data/"${aqmname}"_"${link}"_"${m}
 
 			folder_ud="${mainfolder}/${aqmname}_*_${link}_${rtt}/"${foldername_ud}
-			sudo ./calc_qpd ${folder_ud}_tcp 0
-			sudo ./calc_mix ${folder_ud}_tcp $link $rtt $rtt $a_flows $b_flows
-			sudo ./calc_qpd ${folder_ud}_udp 0
-			sudo ./calc_mix ${folder_ud}_udp $link $rtt $rtt $a_flows $b_flows
+			sudo ../stats/calc_qpd ${folder_ud}_tcp 0
+			sudo ../stats/calc_mix ${folder_ud}_tcp $link $rtt $rtt $a_flows $b_flows
+			sudo ../stats/calc_qpd ${folder_ud}_udp 0
+			sudo ../stats/calc_mix ${folder_ud}_udp $link $rtt $rtt $a_flows $b_flows
 
 
 			folder_ur="${mainfolder}/${aqmname}_*_${link}_${rtt}/"${foldername_ur}
-			sudo ./calc_qpd ${folder_ur}_tcp 0
-			sudo ./calc_mix ${folder_ur}_tcp $link $rtt $rtt $a_flows $b_flows
-			sudo ./calc_qpd ${folder_ur}_udp 0
-			sudo ./calc_mix ${folder_ur}_udp $link $rtt $rtt $a_flows $b_flows
+			sudo ../stats/calc_qpd ${folder_ur}_tcp 0
+			sudo ../stats/calc_mix ${folder_ur}_tcp $link $rtt $rtt $a_flows $b_flows
+			sudo ../stats/calc_qpd ${folder_ur}_udp 0
+			sudo ../stats/calc_mix ${folder_ur}_udp $link $rtt $rtt $a_flows $b_flows
 
 			fn=""
 			if [ "$m" == "ws" ]; then
@@ -3240,7 +3240,7 @@ set logscale y
 			aqmname="m_${aqm}"
 			get_cc_captions_colors
 			folder=${mainfolder}/m_${aqm}_*/mix_1000/${test}
-			sudo ./calc_qpd $folder 0
+			sudo ../stats/calc_qpd $folder 0
 			filename_a=$(find ${folder}/queue_delay_a_ccdf -print)
 			filename_b=$(find ${folder}/queue_delay_b_ccdf -print)
 
