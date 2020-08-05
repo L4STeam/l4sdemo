@@ -20,11 +20,7 @@ pushd "$DEST"
 git checkout "include/"
 popd
 cat >> "$pktsch_h" << EOF
-#ifndef DUALPI2_DEV
 #include "${HERE}/../kernel_modules/sch_dualpi2/compat-pkt_sched.h"
-#else
-#include "${HERE}/../kernel_modules/sch_dualpi2_dev/compat-pkt_sched.h"
-#endif
 EOF
 for qdisc in ${HERE}/*.c; do
     qdisc_o="$(basename $qdisc)"
