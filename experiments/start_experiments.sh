@@ -1,4 +1,8 @@
 #!/bin/bash
+set -x
+pushd ../
+source environment.sh
+popd
 . sh/runtest_functions.sh
 . sh/hlplot_functions.sh
 # if "1" then no commands are executed, just printed (partly TODO)
@@ -38,7 +42,7 @@ DO_CCDF=1
 
 function run_tests() {
 	#example
-	#run_test $i__link $i__rtt "pr" "dualpi2" "100msecn20ms" "any_ect" 
+	run_test $i__link $i__rtt "pr" "dualpi2" "100msecn20ms" "any_ect" 
 }
 
 function run_overload() {
@@ -217,16 +221,16 @@ EOF
 run_ccdf
 
 # experiments with equal RTT, [1-1,1h-1h]
-run_mix
+##run_mix
 
 #extra experiments with different flow combinations, 40Mbps link speed, 10ms RTT
-run_extra
+##run_extra
 
 #experiments with mixed RTT, one flow each
-run_mixrtt2
+##run_mixrtt2
 
 #overload experiments 5 flow each, 100Mbps link, 10ms RTT, UDP rate [50, 70, 100, 140, 200]Mbps, once with ECN enabled, once as classic
-run_overload
+##run_overload
 
 if [ "$DO_PDF" == "1" ]; then
 	create_plotssummary_pdf
