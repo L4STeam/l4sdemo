@@ -212,7 +212,8 @@ Evaluating the latest version of AccECN and TCP Prague w/ RTT independence
 
 	COMMIT: ${commit}
 EOF
-	pdflatex tex/plotssummary.tex
+	pdflatex -interaction=nonstopmode tex/plotssummary.tex > ${FOLDER_PREFIX}/texerrors
+
 	mv plotssummary.pdf ${FOLDER_PREFIX}/${FOLDER_PREFIX}.pdf
 	rm plotssummary.*
 }
