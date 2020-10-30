@@ -125,7 +125,7 @@ public:
 };
 
 struct ThreadParam {
-    ThreadParam(uint32_t sinterval, std::string folder, uint32_t nrs);
+    ThreadParam(uint32_t sinterval, std::string folder, uint32_t nrs, bool q=true);
 
     // table of qdelay values (no need to decode all the time..)
     int qdelay_decode_table[QS_LIMIT];

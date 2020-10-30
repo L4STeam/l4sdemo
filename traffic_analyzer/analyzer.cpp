@@ -59,11 +59,11 @@ uint64_t getStamp()
 }
 
 ThreadParam::ThreadParam(uint32_t sinterval, std::string folder,
-			 uint32_t nrs)
+			 uint32_t nrs, bool q)
 	: m_sinterval(sinterval)
 	, m_folder(folder)
 	, m_nrs(nrs)
-	, quiet(false)
+	, quiet(q)
 {
     // initialize qdelay conversion table
     for (int i = 0; i < QS_LIMIT; ++i) {

@@ -18,7 +18,7 @@ int main(int argc, char **argv)
     char *dev;
     uint32_t sinterval;
     uint32_t nrs = 0;
-
+    bool quiet = 1;
 
     if (argc < 5)
         usage(argc, argv);
@@ -29,14 +29,19 @@ int main(int argc, char **argv)
     std::string folder = argv[3];
     sinterval = atoi(argv[4]);
 
-    std::cout << "pcap filter: " << pcapfilter << std::endl;
-
-    if (argc > 5)
+    if (argc == 6)
         nrs = atoi(argv[5]);
+
+    if (argc == 7)
+            quiet = atoi(argv[6]);;
+
+    if (quiet)
+        std::cout << "pcap filter: " << pcapfilter << std::endl;
+
 
     mkdir(folder.c_str(), 0777);
 
-    ThreadParam *param = new ThreadParam(sinterval, folder, nrs); 
+    ThreadParam *param = new ThreadParam(sinterval, folder, nrs, quiet); 
 
     setup_pcap(param, dev, pcapfilter);
     start_analysis(param);
