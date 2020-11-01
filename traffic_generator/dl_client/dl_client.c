@@ -92,6 +92,8 @@ void run_client(){
   }
   if (err < 0) {
     error("error connecting to server, thread exiting");
+    close(sock);
+    exit(-1);
     return;
   }
 
@@ -139,15 +141,21 @@ int run_dlclients(){
   int err;
   pthread_t thread_client;
   int i = 1;  // start one less in the loop, as the main thread will run one.
-
+  int errors = 0;
   printf("Starting %d client downloads\n", number_of_clients);
 
   while(i < number_of_clients){
 
 	i++;
+	if (errors > 100){
+		printf("Too many errors when creating thread, client exiting\n");
+		exit(-1);
+	}
+
     if((err = pthread_create( &(thread_client), NULL,
               (void*)run_client, NULL)) != 0){
-      error("pthread_create"); // stops/exits here
+          errors++;
+	  error("pthread_create"); // stops/exits here
     }
 
   }
