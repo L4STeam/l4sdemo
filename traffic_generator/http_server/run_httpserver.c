@@ -21,6 +21,7 @@
 
 int sockets[100000]; // Array holding the sockets to pass to the thread
 int samples[100000]; //Array holding the Pareto distribution samples file size to pass to the thread
+int threadparam[100000]; //Contains indices passed to the threads
 char buffer[50000]; // the send buffer, everyone can share as it is read only
 
 /* This method reads the values of a Pareto distribution sample file
@@ -63,7 +64,7 @@ int get_transfer_size(){
 void send_to_socket(int *index){
     int mysampleindex = *index;
     int cur_sock = sockets[mysampleindex];
-    int transfer_size = samples[mysampleindex++];
+    int transfer_size = samples[mysampleindex];
     int transmit_bytes = transfer_size;
     int bytes_xmt = 0;
     int err;
@@ -104,10 +105,12 @@ void send_to_socket(int *index){
       transmit_bytes = transfer_size - bytes_xmt;
     }
 
-    shutdown(cur_sock, 2); // shuts down the read operations only
+    if ((err = shutdown(cur_sock, SHUT_RD)) < 0) { // shuts down the read operations only
+	prerror("error on shutdown");
+    }
 
-    if((err = close(cur_sock)) < 0){
-        perror("close");
+    if ((err = close(cur_sock)) < 0){
+        perror("error on close");
     }
 
     pthread_detach(pthread_self());
@@ -209,8 +212,9 @@ int main(int argc, char *argv[]){
     }
 
     /* Create a new thread to handle the request */
+    threadparam[sampleindex] = sampleindex;
     if((err = pthread_create( &(test_server), NULL,
-                              (void*)send_to_socket, (void*)&sampleindex)) != 0){
+                              (void*)send_to_socket, (void*)&threadparam[sampleindex])) != 0){
 
       perror("pthread_create:");
       }
