@@ -105,12 +105,14 @@ void transfer_compl_data (){
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0){
         fprintf(stderr, "ERROR opening socket for completion data transfer\n");
-        pthread_exit(0);
+        pthread_detach(pthread_self());
+	pthread_exit(0);
     }
     server = gethostbyname(data_transfer_host);
     if (server == NULL) {
         fprintf(stderr,"ERROR, no such host (completion data transfer)\n");
-        pthread_exit(0);
+        pthread_detach(pthread_self()); 
+	pthread_exit(0);
     }
 
     bzero((char *) &serv_addr, sizeof(serv_addr));
@@ -119,6 +121,7 @@ void transfer_compl_data (){
     serv_addr.sin_port = htons(data_transfer_port);
     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) {
         error("ERROR connecting to socket (completion data transfer)");
+	pthread_detach(pthread_self());
 	pthread_exit(0);
     }
 
@@ -158,6 +161,7 @@ void transfer_compl_data (){
 		  n = write(sockfd,&sendbuf[bytes_sent], buf_index-bytes_sent);
 		  if (n < 0) {
 			error("ERROR writing to socket (completion data transfer)");
+			pthread_detach(pthread_self());
 			pthread_exit(0);
 		   }
 

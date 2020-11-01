@@ -131,7 +131,8 @@ void run_client(){
 
   close(sock);
 
-  exit(-1);
+  pthread_detach(pthread_self()); 
+  pthread_exit(0);
 }
 
 /* This function is responsible for running clients */
