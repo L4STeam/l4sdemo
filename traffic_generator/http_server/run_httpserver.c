@@ -106,7 +106,7 @@ void send_to_socket(int *index){
     }
 
     if ((err = shutdown(cur_sock, SHUT_RD)) < 0) { // shuts down the read operations only
-	prerror("error on shutdown");
+	perror("error on shutdown");
     }
 
     if ((err = close(cur_sock)) < 0){
