@@ -86,6 +86,7 @@ int data_transfer_port;
 int samples[100000]; //Array holding the exponentially distributed interarrival times
 int sampleindex;
 int active_clients;
+int connect_errors;
 pthread_mutex_t mutex;
 static FILE *f_wo_hs;
 static FILE *f_w_hs;
@@ -263,6 +264,7 @@ void run_client(){
     close(sock);
     if ((pthread_mutex_lock(&mutex)) == 0) {
 	active_clients--;
+	connect_errors++;
 	pthread_mutex_unlock(&mutex);
     }
     else{
@@ -371,6 +373,14 @@ int run_httpclients(){
       curr_stamp = getStamp();
     }
     //printf("sleep for %d\n", http_request_itime);
+
+    pthread_mutex_lock(&mutex);
+    if (connect_errors > 3) {
+	    pthread_mutex_unlock(&mutex);
+	    exit(-1);
+    } else {
+	   pthread_mutex_unlock(&mutex);
+    }
 
     if((err = pthread_create( &(thread_client), NULL,
               (void*)run_client, NULL)) != 0){
