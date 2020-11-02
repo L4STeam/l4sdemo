@@ -261,9 +261,13 @@ void run_client(){
   if((err = connect(sock, (struct sockaddr *)&addr, sizeof addr)) < 0){
     perror("error connecting to server, thread exiting");
     close(sock);
-    pthread_mutex_lock(&mutex);
-    active_clients--;
-    pthread_mutex_unlock(&mutex);
+    if ((pthread_mutex_lock(&mutex)) == 0) {
+	active_clients--;
+	pthread_mutex_unlock(&mutex);
+    }
+    else{
+	printf("error taking mutex, skipping updating active clients\n");
+    }
 
     pthread_detach(pthread_self());
     pthread_exit(0);
