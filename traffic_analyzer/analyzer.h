@@ -105,10 +105,22 @@ public:
     }
 };
 
+struct QueueSizeSimple {
+public:
+    uint64_t qs_l[QS_LIMIT];
+    uint64_t qs_c[QS_LIMIT];
+
+    void init(){
+        bzero(qs_l,QS_LIMIT*sizeof(uint64_t));
+        bzero(qs_c,QS_LIMIT*sizeof(uint64_t));
+    }
+};
+
 struct DataBlock {
 public:
     struct QueueSize qs;
     struct QueueSize d_qs; // total number of drops for each queue size
+    struct QueueSizeSimple qss;
     struct FlowMap fm;
     uint64_t start; // time in us
     uint64_t last;  // time in us
@@ -118,6 +130,7 @@ public:
     void init(){
         qs.init();
         d_qs.init();
+        qss.init();
         fm.init();
         tot_packets_ecn = 0;
         tot_packets_nonecn = 0;
@@ -125,7 +138,7 @@ public:
 };
 
 struct ThreadParam {
-    ThreadParam(uint32_t sinterval, std::string folder, uint32_t nrs, bool q=true);
+    ThreadParam(uint32_t sinterval, std::string folder, uint32_t nrs, bool q=true, bool qs=false);
 
     // table of qdelay values (no need to decode all the time..)
     int qdelay_decode_table[QS_LIMIT];
@@ -149,6 +162,7 @@ struct ThreadParam {
     int sample_id;
     std::vector<uint64_t> sample_times;
     bool quiet;
+    bool measure_qs;
 };
 
 uint64_t getStamp();

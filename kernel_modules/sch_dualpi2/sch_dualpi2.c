@@ -243,6 +243,7 @@ static void dualpi2_skb_classify(struct dualpi2_sched_data *q,
 	struct dualpi2_skb_cb *cb = dualpi2_skb_cb(skb);
 	int wlen = skb_network_offset(skb);
 
+
 	switch (tc_skb_protocol(skb)) {
 	case htons(ETH_P_IP):
 		wlen += sizeof(struct iphdr);
@@ -324,10 +325,13 @@ static struct sk_buff *dualpi2_qdisc_dequeue(struct Qdisc *sch)
 	struct dualpi2_sched_data *q = qdisc_priv(sch);
 	struct sk_buff *skb;
 	int qlen_c, credit_change;
+        u32 qs_l, qs_c;
 
 pick_packet:
 	/* L queue packets are also accounted for in qdisc_qlen(sch)! */
 	qlen_c = qdisc_qlen(sch) - qdisc_qlen(q->l_queue);
+    qs_l = qdisc_qlen(q->l_queue);
+    qs_c = qlen_c;
 	skb = NULL;
 	/* We can drop after qdisc_dequeue_head() calls.
 	 * Manage statistics by hand to keep them consistent if that happens.
@@ -383,8 +387,15 @@ pick_packet:
 	q->c_protection.credit += credit_change;
 	qdisc_bstats_update(sch, skb);
 #ifdef IS_TESTBED
+
+#ifdef MEASURE_QS
+	testbed_add_metrics_qs(skb, &q->testbed,
+			qs_l, qs_c);
+#else
 	testbed_add_metrics(skb, &q->testbed,
 			    skb_sojourn_time(skb, ktime_get_ns()) >> 10);
+#endif
+
 #endif
 
 exit:

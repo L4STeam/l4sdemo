@@ -19,6 +19,7 @@ int main(int argc, char **argv)
     uint32_t sinterval;
     uint32_t nrs = 0;
     bool quiet = 1;
+    bool qs = 0;
 
     if (argc < 5)
         usage(argc, argv);
@@ -29,11 +30,21 @@ int main(int argc, char **argv)
     std::string folder = argv[3];
     sinterval = atoi(argv[4]);
 
-    if (argc == 6)
+    if (argc >= 6)
         nrs = atoi(argv[5]);
 
-    if (argc == 7)
-            quiet = atoi(argv[6]);;
+    if (argc >= 7)
+        quiet = atoi(argv[6]);
+
+    if (argc == 8)
+	   qs = atoi(argv[7]);
+
+
+    std::cout << "Number of samples requested: " << nrs << std::endl;
+    if (quiet)
+        std::cout << "Running in quiet mode" << std::endl;
+    if (qs)
+        std::cout << "Measuring queue size only" << std::endl;
 
     if (quiet)
         std::cout << "pcap filter: " << pcapfilter << std::endl;
@@ -41,7 +52,7 @@ int main(int argc, char **argv)
 
     mkdir(folder.c_str(), 0777);
 
-    ThreadParam *param = new ThreadParam(sinterval, folder, nrs, quiet); 
+    ThreadParam *param = new ThreadParam(sinterval, folder, nrs, quiet, qs);
 
     setup_pcap(param, dev, pcapfilter);
     start_analysis(param);

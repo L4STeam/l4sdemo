@@ -9,6 +9,8 @@
 #define IS_TESTBED 1
 #endif
 
+//#define MEASURE_QS 1
+
 #include <net/inet_ecn.h>
 #include "numbers.h"
 
@@ -128,6 +130,31 @@ static inline void testbed_add_metrics_ipv4(struct sk_buff *skb,
 	iph->check = (__force __sum16)htons(check);
 }
 
+static inline void testbed_add_metrics_ipv4_qs(struct sk_buff *skb,
+					    struct testbed_metrics *testbed,
+					    u16 qs_l,
+					    u16 qs_c)
+{
+	struct iphdr *iph = ip_hdr(skb);
+	u16 id;
+	u32 check;
+
+	check = ntohs((__force __be16)iph->check) + ntohs(iph->id);
+	if ((check + 1) >> 16)
+		check = (check + 1) & 0xffff;
+
+	/* use upper 5 bits in id field to store L queue size
+	 * and the rest to store C queue size
+	 */
+	id = qs_c | (qs_l << 11);
+
+	check -= id;
+	check += check >> 16; /* adjust carry */
+
+	iph->id = htons(id);
+	iph->check = (__force __sum16)htons(check);
+}
+
 /* Add metrics used by traffic analyzer to packet before dispatching.
  * qdelay is the time in units of 1024 us that the packet spent in the queue.*/
 static inline void testbed_add_metrics(struct sk_buff *skb,
@@ -157,6 +184,30 @@ static inline void testbed_add_metrics(struct sk_buff *skb,
 			break;
 
 		testbed_add_metrics_ipv4(skb, testbed, qdelay);
+		break;
+	default:
+		break;
+	}
+}
+
+/* Add metrics used by traffic analyzer to packet before dispatching.
+ * Measures queue size instead of queue delay and drops.*/
+static inline void testbed_add_metrics_qs(struct sk_buff *skb,
+				       struct testbed_metrics *testbed,
+				       u32 lq_len,
+				       u32 cq_len)
+{
+	int wlen = skb_network_offset(skb);
+
+	/* TODO: IPv6 support using flow label (and increase resolution?) */
+	switch (tc_skb_protocol(skb)) {
+	case htons(ETH_P_IP):
+		wlen += sizeof(struct iphdr);
+		if (!pskb_may_pull(skb, wlen) ||
+		    skb_try_make_writable(skb, wlen))
+			break;
+
+		testbed_add_metrics_ipv4_qs(skb, testbed, (__force __u16)lq_len,  (__force __u16)cq_len);
 		break;
 	default:
 		break;

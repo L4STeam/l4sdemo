@@ -49,6 +49,7 @@ struct vlan_header {
 } __attribute__((__packed__));
 
 static void *printInfo(void *param);
+static void *printInfoQS(void *param);
 
 uint64_t getStamp()
 {
@@ -59,11 +60,12 @@ uint64_t getStamp()
 }
 
 ThreadParam::ThreadParam(uint32_t sinterval, std::string folder,
-			 uint32_t nrs, bool q)
+			 uint32_t nrs, bool q, bool qs)
 	: m_sinterval(sinterval)
 	, m_folder(folder)
 	, m_nrs(nrs)
 	, quiet(q)
+	, measure_qs(qs)
 {
     // initialize qdelay conversion table
     for (int i = 0; i < QS_LIMIT; ++i) {
@@ -134,7 +136,7 @@ void processPacket(u_char *, const struct pcap_pkthdr *header,
 #define PARSE(type, name) _PARSE(type, name, offset)
 
     uint32_t mark;
-    int offset, drops, qdelay_encoded;
+    int offset, drops, qdelay_encoded, qs_l, qs_c;
     uint32_t saddr, daddr; /* Will need to make this more generic */
     uint16_t sport, dport;
     uint8_t ts, proto;
@@ -173,11 +175,32 @@ parse_ip: {
     //For convenience, we only use IP classification
     ts = ntohl(saddr);
     uint16_t id = ntohs(iph->id);
-    drops = decodeDrops(id >> 11); // drops stored in 5 bits MSB
-    // We don't decode queueing delay here as we need to store it in a table,
-    // so defer this to the actual serialization of the table to file
-    qdelay_encoded = id & 2047; // 2047 = 0b0000011111111111
+    if (tp->measure_qs) {
+	   qs_c = id & 2047; // 2047 = 0b0000011111111111
+	   qs_l = id >> 11;
+       goto measure_qs;
+	 //  drops = id >> 11;
+	  // qdelay_encoded = id & 2047;
+    } else {
+        drops = decodeDrops(id >> 11); // drops stored in 5 bits MSB
+        // We don't decode queueing delay here as we need to store it in a table,
+        // so defer this to the actual serialization of the table to file
+        qdelay_encoded = id & 2047; // 2047 = 0b0000011111111111
+    }
     goto parse_transport;
+}
+
+measure_qs: {
+    if (tp->measure_qs) {
+        pthread_mutex_lock(&tp->m_mutex);
+        tp->db1->qss.qs_l[qs_l]++;
+        if (qs_c < QS_LIMIT)
+            tp->db1->qss.qs_c[qs_c]++;
+        else
+            tp->db1->qss.qs_c[QS_LIMIT-1]++;
+        pthread_mutex_unlock(&tp->m_mutex);
+        return;
+    }
 }
 
 parse_ipv6: {
@@ -211,6 +234,7 @@ parse_transport: {
     pthread_mutex_lock(&tp->m_mutex);
 
     std::map<SrcDst,FlowData> *fmap;
+
     switch (ts & INET_ECN_MASK) {
     case INET_ECN_NOT_ECT:
         tp->db1->tot_packets_nonecn++;
@@ -237,11 +261,14 @@ parse_transport: {
         fmap = &tp->db1->fm.ecn_rate;
         break;
     }
+
     auto ret = fmap->insert(
         std::pair<SrcDst,FlowData>(sd, FlowData(bitlen, drops, mark)));
     if (ret.second == false) /* We already have entries for that flow */
         fmap->at(sd).update(bitlen, drops, mark);
     tp->packets_captured++;
+
+
 
     pthread_mutex_unlock(&tp->m_mutex);
 }
@@ -330,7 +357,10 @@ int start_analysis(ThreadParam *param)
     }
 
     thread_id[1] = 0;
-    pthread_create(&thread_id[1], &attrs, &printInfo, NULL);
+    if (!tp->measure_qs)
+        pthread_create(&thread_id[1], &attrs, &printInfo, NULL);
+    else
+	   pthread_create(&thread_id[1], &attrs, &printInfoQS, NULL);
 
     if (res != 0) {
         fprintf(stderr, "Error while creating thread, exiting...\n");
@@ -440,6 +470,117 @@ void wait(uint64_t sleep_ns) {
     pthread_mutex_unlock(&tp->quit_lock);
 }
 
+void *printInfoQS(void *)
+{
+
+    uint64_t time_ms;
+
+    // per sample
+    printf("Output folder: %s\n", tp->m_folder.c_str());
+    std::ofstream f_qs_l;              	   openFileW(f_qs_l,                  tp->m_folder + "/qs_l");
+    std::ofstream f_qs_c;                  openFileW(f_qs_c,                  tp->m_folder + "/qs_c");
+
+
+    // first column in header contains the number of columns following
+    f_qs_l << QS_LIMIT;
+    f_qs_c << QS_LIMIT;
+
+
+    // header row contains the queue delay this column represents
+    // e.g. a cell value multiplied by this header cell yields queue delay in us
+    for (int i = 0; i < QS_LIMIT; ++i) {
+        f_qs_l << " " << i;
+        f_qs_c << " " << i;
+    }
+
+    f_qs_l << std::endl;
+    f_qs_c << std::endl;
+
+  // first run
+    // to get accurate results we swap the database and initialize timers here
+    // (this way we don't time wrong and gets packets outside our time area)
+    tp->db2->init();
+    tp->swapDB();
+    tp->start = tp->db1->start;
+
+    wait(tp->m_sinterval * NSEC_PER_MS);
+
+    uint64_t elapsed, next, sleeptime;
+
+    while (1) {
+        tp->swapDB();
+
+        // time since we started processing
+        time_ms = (tp->db2->last - tp->start) / 1000;
+        tp->sample_times.push_back(time_ms);
+
+        printf("\n--- BEGIN SAMPLE # %d", (int) tp->sample_id + 1);
+        if (tp->m_nrs != 0) {
+            printf(" of %d", tp->m_nrs);
+        }
+        printf(" -- total run time %d ms ---\n", (int) time_ms);
+
+        printf(" QS [packets]    ");
+        printf(" L queue: ");
+        printf(" C queue: \n");
+
+
+        f_qs_l << time_ms;
+        f_qs_c << time_ms;
+
+        for (int i = 0; i < QS_LIMIT; ++i) {
+            if (tp->db2->qss.qs_l[i] > 0 ||
+		tp->db2->qss.qs_c[i] > 0 ) {
+                printf("%9.3d:  %8llu %8llu\n",
+                    i,
+                    tp->db2->qss.qs_l[i],
+                    tp->db2->qss.qs_c[i]
+                );
+            }
+
+            f_qs_l << " " << tp->db2->qss.qs_l[i];
+            f_qs_c << " " << tp->db2->qss.qs_c[i];
+        }
+        f_qs_l << std::endl;
+        f_qs_c << std::endl;
+
+        printf("--- END SAMPLE # %d", (int) tp->sample_id + 1);
+        if (tp->m_nrs != 0) {
+            printf(" of %d", tp->m_nrs);
+        }
+        printf(" -- \n\n");
+
+        if (tp->m_nrs != 0 && tp->sample_id >= (tp->m_nrs - 1)) {
+            printf("Obtained given number of samples (%d)\n", tp->m_nrs);
+            break;
+        }
+
+        tp->db2->init(); // init outside the critical area to save time
+
+        elapsed = getStamp() - tp->start;
+        next = ((uint64_t) tp->sample_id + 2) *
+		tp->m_sinterval * 1000; // convert ms to us
+
+        int process_time = getStamp() - tp->db2->last;
+        if (elapsed < next) {
+            uint64_t sleeptime = next - elapsed;
+            printf("Processed data in approx. %d us - sleeping for %d us\n",
+		   (int) process_time, (int) sleeptime);
+            wait(sleeptime * NSEC_PER_US);
+        }
+
+        if (tp->quit) {
+            break;
+        }
+
+        tp->sample_id++;
+    }
+
+    f_qs_l.close();
+    f_qs_c.close();
+
+}
+
 void *printInfo(void *)
 {
     uint64_t time_ms;
@@ -464,6 +605,7 @@ void *printInfo(void *)
     std::ofstream f_drops_ecn;             openFileW(f_drops_ecn,             tp->m_folder + "/drops_ecn");
     std::ofstream f_drops_nonecn;          openFileW(f_drops_nonecn,          tp->m_folder + "/drops_nonecn");
     std::ofstream f_marks_ecn;             openFileW(f_marks_ecn,             tp->m_folder + "/marks_ecn");
+    std::ofstream f_marks_nonecn;          openFileW(f_marks_nonecn,          tp->m_folder + "/marks_nonecn");
     std::ofstream f_rate;                  openFileW(f_rate,                  tp->m_folder + "/rate");
 
     // first column in header contains the number of columns following
@@ -475,6 +617,7 @@ void *printInfo(void *)
     f_queue_drops_ecn01 << QS_LIMIT;
     f_queue_drops_ecn10 << QS_LIMIT;
     f_queue_drops_ecn11 << QS_LIMIT;
+
 
     // header row contains the queue delay this column represents
     // e.g. a cell value multiplied by this header cell yields queue delay in us
@@ -573,6 +716,7 @@ void *printInfo(void *)
         f_drops_ecn    << tp->sample_id << " " << time_ms;
         f_drops_nonecn << tp->sample_id << " " << time_ms;
         f_marks_ecn    << tp->sample_id << " " << time_ms;
+        f_marks_nonecn << tp->sample_id << " " << time_ms;
         f_rate         << tp->sample_id << " " << time_ms;
 
         processFD();
@@ -582,6 +726,7 @@ void *printInfo(void *)
         uint64_t drops_ecn = 0;
         uint64_t drops_nonecn = 0;
         uint64_t marks_ecn = 0;
+        uint64_t marks_nonecn = 0;
 
         for (auto const& val: tp->fd_pf_ecn) {
             rate_ecn += val.second.at(tp->sample_id).rate;
@@ -596,10 +741,12 @@ void *printInfo(void *)
         for (auto const& val: tp->fd_pf_nonecn) {
             rate_nonecn += val.second.at(tp->sample_id).rate;
             drops_nonecn += val.second.at(tp->sample_id).drops;
+            marks_nonecn += val.second.at(tp->sample_id).marks;
         }
 
         f_rate_nonecn << " " << rate_nonecn;
         f_drops_nonecn << " " << drops_nonecn;
+        f_marks_nonecn << " " << marks_nonecn;
 
         f_rate << " " << (rate_ecn + rate_nonecn);
 
@@ -609,6 +756,7 @@ void *printInfo(void *)
         f_drops_ecn << std::endl;
         f_drops_nonecn << std::endl;
         f_marks_ecn << std::endl;
+        f_marks_nonecn << std::endl;
 
         f_packets_ecn << tp->db2->tot_packets_ecn << std::endl;
         f_packets_nonecn << tp->db2->tot_packets_nonecn << std::endl;
@@ -669,6 +817,7 @@ void *printInfo(void *)
     f_drops_ecn.close();
     f_drops_nonecn.close();
     f_marks_ecn.close();
+    f_marks_nonecn.close();
     f_rate.close();
 
     // write per flow stats
@@ -679,6 +828,7 @@ void *printInfo(void *)
     std::ofstream f_flows_drops_ecn;    openFileW(f_flows_drops_ecn,     tp->m_folder + "/flows_drops_ecn");
     std::ofstream f_flows_drops_nonecn; openFileW(f_flows_drops_nonecn,  tp->m_folder + "/flows_drops_nonecn");
     std::ofstream f_flows_marks_ecn;    openFileW(f_flows_marks_ecn,     tp->m_folder + "/flows_marks_ecn");
+    std::ofstream f_flows_marks_nonecn; openFileW(f_flows_marks_nonecn,     tp->m_folder + "/flows_marks_nonecn");
 
     // note: drop and mark numbers per flow don't really tell us much, as
     //       the numbers include whichever packet was handled before this
@@ -692,6 +842,7 @@ void *printInfo(void *)
 
         f_flows_rate_nonecn << i << " " << tp->sample_times[i];
         f_flows_drops_nonecn << i << " " << tp->sample_times[i];
+        f_flows_marks_nonecn << i << " " << tp->sample_times[i];
 
         for (auto const& kv: tp->fd_pf_ecn) {
             f_flows_rate_ecn << " " << kv.second.at(i).rate;
@@ -702,6 +853,7 @@ void *printInfo(void *)
         for (auto const& kv: tp->fd_pf_nonecn) {
             f_flows_rate_nonecn << " " << kv.second.at(i).rate;
             f_flows_drops_nonecn << " " << kv.second.at(i).drops;
+            f_flows_marks_nonecn << " " << kv.second.at(i).marks;
         }
 
         f_flows_rate_ecn << std::endl;
@@ -710,6 +862,7 @@ void *printInfo(void *)
 
         f_flows_rate_nonecn << std::endl;
         f_flows_drops_nonecn << std::endl;
+        f_flows_marks_nonecn << std::endl;
     }
 
     f_flows_rate_ecn.close();
