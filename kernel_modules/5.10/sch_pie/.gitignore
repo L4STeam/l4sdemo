@@ -1,0 +1,8 @@
+.sch_pie.ko.cmd
+.sch_pie.mod.o.cmd
+.sch_pie.o.cmd
+.tmp_versions/
+Module.symvers
+modules.order
+sch_pie.ko
+sch_pie.mod.c

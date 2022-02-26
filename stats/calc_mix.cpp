@@ -380,9 +380,9 @@ void readFileMarks(std::string filename_marks, Statistics *stats, std::string fi
 
                 if (tot_packets > 0) {
                     marks_perc = marks * 100 / tot_packets;
+                    samples->push_back(marks_perc);
                 }
 
-                samples->push_back(marks_perc);
             }
         }
     }
@@ -411,16 +411,14 @@ void readFileDrops(std::string filename_drops, Statistics *stats, std::string fi
                 infile_tot >> tot_packets;
                 double drops_perc = 0;
 
-                if (tot_packets+drops > 0)
+                if (tot_packets+drops > 0) {
                     drops_perc = drops*100/(tot_packets+drops);
-
-                samples->push_back(drops_perc);		
-
-                if (drops_perc > 100) {
-                    std::cout << "too large drops perc: " << drops_perc << std::endl;
-		    std::cout << "tot_packets: " << tot_packets << " drops: " << drops << std::endl;
-		}
-		 
+                    samples->push_back(drops_perc); 
+                    if (drops_perc > 100) {
+                        std::cout << "too large drops perc: " << drops_perc << std::endl;
+                        std::cout << "tot_packets: " << tot_packets << " drops: " << drops << std::endl;
+                    }    
+                }
             }
         }
     }
