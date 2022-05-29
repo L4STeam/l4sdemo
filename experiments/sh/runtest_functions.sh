@@ -2,19 +2,20 @@
 
 
 interface_options() {
+	iface=$IFACE
+    iface2=$REV_IFACE
 	enabled="off"
 	echo "changing interface options (gro, gso, tso) to $enabled"
 	for o in "gro" "gso" "tso"; do
-		echo "option: $o"
-		sudo ethtool -K $IFACE $o $enabled
-		for i in ${REV_IFACE}; do
-			sudo ethtool -K $i $o $enabled
-		done
+		echo "option: $o on $iface"
+		sudo ethtool -K $iface $o $enabled
+		echo "option: $o on $iface2"
+		sudo ethtool -K $iface2 $o $enabled
 		echo "setting option on the servers and clients"
-		ssh -t $SERVER_A "sudo ethtool -K em2 $o $enabled"
-		ssh -t $SERVER_B "sudo ethtool -K eno2 $o $enabled"
-		ssh -t $CLIENT_A "sudo ethtool -K eno2 $o $enabled"
-		ssh -t $CLIENT_B "sudo ethtool -K eno2 $o $enabled"
+		ssh -t $SERVER_A "sudo ethtool -K ${SERVER_A_IFACE} $o $enabled"
+		ssh -t $SERVER_B "sudo ethtool -K ${SERVER_A_IFACE} $o $enabled"
+		ssh -t $CLIENT_A "sudo ethtool -K ${CLIENT_A_IFACE} $o $enabled"
+		ssh -t $CLIENT_B "sudo ethtool -K ${CLIENT_B_IFACE} $o $enabled"
 	done
 	echo "changing TCP mem (mem, rmem, wmem)"
 	for o in "mem='8388608 838860800 83886080000'" "rmem='4096 8738000 838860800'" "wmem='4096 65536 8388608'"; do
@@ -24,10 +25,7 @@ interface_options() {
 		ssh -t $CLIENT_A "sudo sysctl -w net.ipv4.tcp_$o"
 		ssh -t $CLIENT_B "sudo sysctl -w net.ipv4.tcp_$o"
 	done
-	echo "done"
-		#sleep 20
 }
-
 
 
 # do_exec <commands>
@@ -281,9 +279,9 @@ commit hash: $commit_hash
 				wait="$(($wait + $rate * $rtt / 100))" 
 				echo "Waiting for $wait seconds before capturing"
 				if [ $rate == 200 ] && [ $rtt == 100 ]; then
-					wait=250
+					wait=350
 				elif [ $rate == 120 ] && [ $rtt == 100 ]; then
-					wait=150
+					wait=250
 				fi
 
 			fi

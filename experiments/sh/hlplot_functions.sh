@@ -188,6 +188,10 @@ function get_tb_color() {
 		cc_a="Prague-RTT-indep"
 		cc_b="Prague-RTT-indep"
 		color_tb="orange"
+	elif [ "$cc1" == "p" ] && [ "$cc2" == "r" ]; then
+		cc_a="Prague"
+		cc_b="Reno"
+		color_tb="brown"
 	fi
 }
 
@@ -588,14 +592,15 @@ function copy_data_link40_rtt10_extra() {
 	for t in "${testcases_to_plot_extra[@]}"; do
 		testcase=$t
 		gen_foldername_id
-		#TB
 		folder="${mainfolder}/${aqmname}_*_${link}_${rtt}/mix_1000/"${foldername}
 		sudo ../stats/calc_qpd $folder 0
 		sudo ../stats/calc_mix $folder $link $rtt $rtt $a_flows $b_flows
-		line=$(cat ${folder}/rr)
-		filecontent_tb=${filecontent_tb}A${a_flows}-B${b_flows}" "${line}$'\n'
+
+		#TB
 		#WB
 		if [ "$testcase" != "s0d0s10d0" ] && [ "$testcase" != "s10d0s0d0" ] ; then
+			line=$(cat ${folder}/rr)
+			filecontent_tb=${filecontent_tb}A${a_flows}-B${b_flows}" "${line}$'\n'
 			line=$(cat ${folder}/wr)
 			filecontent_wb=${filecontent_wb}A${a_flows}-B${b_flows}" "${line}$'\n'
 		fi
@@ -678,113 +683,116 @@ function copy_data_line_o() {
 
 	for m in "ws" "wb" "ts" "qd" "ls" "marks"; do
 
-		declare -i avgqs_a_rtt_ud
-		declare -i avgqs_a_rtt_ur
-		declare -i avgqs_b_rtt_ud
-		declare -i avgqs_b_rtt_ur
+		declare -i avgqs_a_rtt_ua
+		declare -i avgqs_a_rtt_ub
+		declare -i avgqs_b_rtt_ua
+		declare -i avgqs_b_rtt_ub
 
-		declare -i fairrate_ud
-		declare -i fairrate_ur
+		declare -i fairrate_ua
+		declare -i fairrate_ub
 
-		declare -i fairwin_ud
-		declare -i fairwin_ur
-		declare -i fairwin_b_ud
-		declare -i fairwin_b_ur
+		declare -i fairwin_ua
+		declare -i fairwin_ub
+		declare -i fairwin_b_ua
+		declare -i fairwin_b_ub
 
 		declare -i link_u
 
-		filecontent_a_ud="#udprate #nrflows #avg #p1 #p25 #p75 #p99 #stddev"$'\n'
-		filecontent_b_ud="#udprate #nrflows #avg #p1 #p25 #p75 #p99 #stddev"$'\n'
-		filecontent_ud="#udprate #nrflows #wr"$'\n'
+		filecontent_a_ua="#udprate #nrflows #avg #p1 #p25 #p75 #p99 #stddev"$'\n'
+		filecontent_b_ua="#udprate #nrflows #avg #p1 #p25 #p75 #p99 #stddev"$'\n'
+		filecontent_ua="#udprate #nrflows #wr"$'\n'
 
-		filecontent_a_ur="#udprate #nrflows #avg #p1 #p25 #p75 #p99 #stddev"$'\n'
-		filecontent_b_ur="#udprate #nrflows #avg #p1 #p25 #p75 #p99 #stddev"$'\n'
-		filecontent_ur="#udprate #nrflows #wr"$'\n'
+		filecontent_a_ub="#udprate #nrflows #avg #p1 #p25 #p75 #p99 #stddev"$'\n'
+		filecontent_b_ub="#udprate #nrflows #avg #p1 #p25 #p75 #p99 #stddev"$'\n'
+		filecontent_ub="#udprate #nrflows #wr"$'\n'
 
-		filecontent_udp_d="#udprate #nrflows #avg #p1 #p25 #p75 #p99 #stddev"$'\n'
-		filecontent_udp_r="#udprate #nrflows #avg #p1 #p25 #p75 #p99 #stddev"$'\n'
+		filecontent_udp_a="#udprate #nrflows #avg #p1 #p25 #p75 #p99 #stddev"$'\n'
+		filecontent_udp_b="#udprate #nrflows #avg #p1 #p25 #p75 #p99 #stddev"$'\n'
 
-		filecontent_rateshare_ud="#udprate #udpshare #ecnshare #nonecnshare #link"$'\n'
-		filecontent_rateshare_ur="#udprate #udpshare #ecnshare #nonecnshare #link"$'\n'
+		filecontent_rateshare_ua="#udprate #udpshare #ecnshare #nonecnshare #link"$'\n'
+		filecontent_rateshare_ub="#udprate #udpshare #ecnshare #nonecnshare #link"$'\n'
 		
 		for udprate in "50" "70" "100" "140" "200"; do
 
-			foldername_ud="mix_1000d_u${udprate}s5_r_u0s5"
-			foldername_ur="mix_1000d_u0s5_r_u${udprate}s5"
+			foldername_ua="mix_1000d_u${udprate}s5_r_u0s5"
+			foldername_ub="mix_1000d_u0s5_r_u${udprate}s5"
 
 			filename=${targetfolder}"/data/"${aqmname}"_"${link}"_"${m}
 
-			folder_ud="${mainfolder}/${aqmname}_*_${link}_${rtt}/"${foldername_ud}
-			sudo ../stats/calc_qpd ${folder_ud}_tcp 0
-			sudo ../stats/calc_mix ${folder_ud}_tcp $link $rtt $rtt $a_flows $b_flows
-			sudo ../stats/calc_qpd ${folder_ud}_udp 0
-			sudo ../stats/calc_mix ${folder_ud}_udp $link $rtt $rtt $a_flows $b_flows
+			folder_ua="${mainfolder}/${aqmname}_*_${link}_${rtt}/"${foldername_ua}
+			sudo ../stats/calc_qpd ${folder_ua}_tcp 0
+			sudo ../stats/calc_mix ${folder_ua}_tcp $link $rtt $rtt $a_flows $b_flows
+			sudo ../stats/calc_qpd ${folder_ua}_udp 0
+			sudo ../stats/calc_mix ${folder_ua}_udp $link $rtt $rtt 1 0
 
 
-			folder_ur="${mainfolder}/${aqmname}_*_${link}_${rtt}/"${foldername_ur}
-			sudo ../stats/calc_qpd ${folder_ur}_tcp 0
-			sudo ../stats/calc_mix ${folder_ur}_tcp $link $rtt $rtt $a_flows $b_flows
-			sudo ../stats/calc_qpd ${folder_ur}_udp 0
-			sudo ../stats/calc_mix ${folder_ur}_udp $link $rtt $rtt $a_flows $b_flows
+			folder_ub="${mainfolder}/${aqmname}_*_${link}_${rtt}/"${foldername_ub}
+			sudo ../stats/calc_qpd ${folder_ub}_tcp 0
+			sudo ../stats/calc_mix ${folder_ub}_tcp $link $rtt $rtt $a_flows $b_flows
+			sudo ../stats/calc_qpd ${folder_ub}_udp 0
+			sudo ../stats/calc_mix ${folder_ub}_udp $link $rtt $rtt 0 1
 
 			fn=""
 			if [ "$m" == "ws" ]; then
 				fn="stat_win"
-				avgqs_a_rtt_ud=$(cat ${folder_ud}_tcp/avgqs_a)+${rtt}
-				avgqs_b_rtt_ud=$(cat ${folder_ud}_tcp/avgqs_b)+${rtt}
+				avgqs_a_rtt_ua=$(cat ${folder_ua}_tcp/avgqs_a)+${rtt}
+				avgqs_b_rtt_ua=$(cat ${folder_ua}_tcp/avgqs_b)+${rtt}
 				
-				avgqs_a_rtt_ur=$(cat ${folder_ur}_tcp/avgqs_a)+${rtt}
-				avgqs_b_rtt_ur=$(cat ${folder_ur}_tcp/avgqs_b)+${rtt}
+				avgqs_a_rtt_ub=$(cat ${folder_ub}_tcp/avgqs_a)+${rtt}
+				avgqs_b_rtt_ub=$(cat ${folder_ub}_tcp/avgqs_b)+${rtt}
 
-				declare -i avgrate_a_ud=$(cat ${folder_ud}_tcp/avgrate_a)
-				declare -i avgrate_b_ud=$(cat ${folder_ud}_tcp/avgrate_b)
-				declare -i avgrate_a_ur=$(cat ${folder_ur}_tcp/avgrate_a)
-				declare -i avgrate_b_ur=$(cat ${folder_ur}_tcp/avgrate_b)
+				declare -i avgrate_a_ua=$(cat ${folder_ua}_tcp/avgrate_a)*5
+				declare -i avgrate_b_ua=$(cat ${folder_ua}_tcp/avgrate_b)*5
+				declare -i avgrate_udp_ua=$(cat ${folder_ua}_udp/avgrate_a)
+
+				declare -i avgrate_a_ub=$(cat ${folder_ub}_tcp/avgrate_a)*5
+				declare -i avgrate_b_ub=$(cat ${folder_ub}_tcp/avgrate_b)*5
+				declare -i avgrate_udp_ub=$(cat ${folder_ub}_udp/avgrate_b)
 				
 				
-				totrate_ud=$avgrate_a_ud*5+$avgrate_b_ud*5
-				totrate_ur=$avgrate_a_ur*5+$avgrate_b_ur*5
+				totrate_ua=$avgrate_a_ua+$avgrate_b_ua
+				totrate_ub=$avgrate_a_ub+$avgrate_b_ub
 
 
-				declare -i avgqsrtt_ud=500000/${avgqs_a_rtt_ud}+500000/${avgqs_b_rtt_ud}
-				declare -i avgqsrtt_ur=500000/${avgqs_a_rtt_ur}+500000/${avgqs_b_rtt_ur}
+				declare -i avgqsrtt_ua=500000/${avgqs_a_rtt_ua}+500000/${avgqs_b_rtt_ua}
+				declare -i avgqsrtt_ub=500000/${avgqs_a_rtt_ub}+500000/${avgqs_b_rtt_ub}
 
 
-				fairwin_ud=${totrate_ud}/${avgqsrtt_ud}/1000000
-				fairwin_ur=${totrate_ur}/${avgqsrtt_ur}/1000000
+				fairwin_ua=${totrate_ua}/${avgqsrtt_ua}/1000000
+				fairwin_ub=${totrate_ub}/${avgqsrtt_ub}/1000000
 
 			elif [ "$m" == "wb" ]; then
 				fn="wr"
-				line_ud=$(cat ${folder_ud}_tcp/${fn})
-				line_ur=$(cat ${folder_ur}_tcp/${fn})
-				filecontent_ud=${filecontent_ud}${udprate}" "${line_ud}$'\n'
-				filecontent_ur=${filecontent_ur}${udprate}" "${line_ur}$'\n'
+				line_ua=$(cat ${folder_ua}_tcp/${fn})
+				line_ub=$(cat ${folder_ub}_tcp/${fn})
+				filecontent_ua=${filecontent_ua}${udprate}" "${line_ua}$'\n'
+				filecontent_ub=${filecontent_ub}${udprate}" "${line_ub}$'\n'
 			elif [ "$m" == "ts" ]; then
 				fn="stat_rpf"
 				fn1="rateshare"
-				avgqs_a_rtt_ud=$(cat ${folder_ud}_tcp/avgqs_a)+${rtt}
-				avgqs_b_rtt_ud=$(cat ${folder_ud}_tcp/avgqs_b)+${rtt}
+				avgqs_a_rtt_ua=$(cat ${folder_ua}_tcp/avgqs_a)+${rtt}
+				avgqs_b_rtt_ua=$(cat ${folder_ua}_tcp/avgqs_b)+${rtt}
 				
-				avgqs_a_rtt_ur=$(cat ${folder_ur}_tcp/avgqs_a)+${rtt}
-				avgqs_b_rtt_ur=$(cat ${folder_ur}_tcp/avgqs_b)+${rtt}
+				avgqs_a_rtt_ub=$(cat ${folder_ub}_tcp/avgqs_a)+${rtt}
+				avgqs_b_rtt_ub=$(cat ${folder_ub}_tcp/avgqs_b)+${rtt}
 
-				declare -i avgrate_a_ud=$(cat ${folder_ud}_tcp/avgrate_a)
-				declare -i avgrate_b_ud=$(cat ${folder_ud}_tcp/avgrate_b)
-				declare -i avgrate_udp_ud=$(cat ${folder_ud}_udp/avgrate_a)
+				declare -i avgrate_a_ua=$(cat ${folder_ua}_tcp/avgrate_a)
+				declare -i avgrate_b_ua=$(cat ${folder_ua}_tcp/avgrate_b)
+				declare -i avgrate_udp_ua=$(cat ${folder_ua}_udp/avgrate_a)
 				
-				declare -i avgrate_a_ur=$(cat ${folder_ur}_tcp/avgrate_a)
-				declare -i avgrate_b_ur=$(cat ${folder_ur}_tcp/avgrate_b)
-				declare -i avgrate_udp_ur=$(cat ${folder_ur}_udp/avgrate_b)
+				declare -i avgrate_a_ub=$(cat ${folder_ub}_tcp/avgrate_a)
+				declare -i avgrate_b_ub=$(cat ${folder_ub}_tcp/avgrate_b)
+				declare -i avgrate_udp_ub=$(cat ${folder_ub}_udp/avgrate_b)
 
 				totlinkratebytes="12500000"
-				line_ud="${udprate} ${avgrate_udp_ud} ${avgrate_b_ud} ${avgrate_a_ud} ${totlinkratebytes}"
-				line_ur="${udprate} ${avgrate_udp_ur} ${avgrate_b_ur} ${avgrate_a_ur} ${totlinkratebytes}"
+				line_ua="${udprate} ${avgrate_udp_ua} ${avgrate_a_ua} ${avgrate_b_ua} ${totlinkratebytes}"
+				line_ub="${udprate} ${avgrate_udp_ub} ${avgrate_a_ub} ${avgrate_b_ub} ${totlinkratebytes}"
 			
-				fairrate_ud=$avgrate_a_ud+$avgrate_b_ud
-				fairrate_ud=$fairrate_ud/2
+				fairrate_ua=$avgrate_a_ua+$avgrate_b_ua
+				fairrate_ua=$fairrate_ua/2
 
-				fairrate_ur=$avgrate_a_ur+$avgrate_b_ur
-				fairrate_ur=$fairrate_ur/2
+				fairrate_ub=$avgrate_a_ub+$avgrate_b_ub
+				fairrate_ub=$fairrate_ub/2
 
 			elif [ "$m" == "qd" ]; then
 				fn="stat_qs"
@@ -795,62 +803,62 @@ function copy_data_line_o() {
 			fi
 
 			if [ "$m" != "wb" ]; then
-				line_a_ud=$(cat ${folder_ud}_tcp/${fn}_a)
-				line_a_ur=$(cat ${folder_ur}_tcp/${fn}_a)
+				line_a_ua=$(cat ${folder_ua}_tcp/${fn}_a)
+				line_a_ub=$(cat ${folder_ub}_tcp/${fn}_a)
 			fi
 			if [ "$m" == "ws" ]; then
-				line_a_ud=${line_a_ud}" "$fairwin_ud
-				line_a_ur=${line_a_ur}" "$fairwin_ur
+				line_a_ua=${line_a_ua}" "$fairwin_ua
+				line_a_ub=${line_a_ub}" "$fairwin_ub
 			elif [ "$m" == "ts" ]; then
-				line_a_ud=${line_a_ud}" "$fairrate_ud
-				line_a_ur=${line_a_ur}" "$fairrate_ur
-				filecontent_rateshare_ud=${filecontent_rateshare_ud}${line_ud}$'\n'
-				filecontent_rateshare_ur=${filecontent_rateshare_ur}${line_ur}$'\n'
+				line_a_ua=${line_a_ua}" "$fairrate_ua
+				line_a_ub=${line_a_ub}" "$fairrate_ub
+				filecontent_rateshare_ua=${filecontent_rateshare_ua}${line_ua}$'\n'
+				filecontent_rateshare_ub=${filecontent_rateshare_ub}${line_ub}$'\n'
 			fi
 			
 			if [ "$m" != "wb" ]; then
-				line_udp_d=$(cat ${folder_ud}_udp/${fn}_a)
+				line_udp_a=$(cat ${folder_ua}_udp/${fn}_a)
 
-				filecontent_a_ud=${filecontent_a_ud}${udprate}" "${line_a_ud}$'\n'
-				filecontent_a_ur=${filecontent_a_ur}${udprate}" "${line_a_ur}$'\n'
+				filecontent_a_ua=${filecontent_a_ua}${udprate}" "${line_a_ua}$'\n'
+				filecontent_a_ub=${filecontent_a_ub}${udprate}" "${line_a_ub}$'\n'
 
-				filecontent_udp_d=${filecontent_udp_d}${udprate}" "${line_udp_d}$'\n'
+				filecontent_udp_a=${filecontent_udp_a}${udprate}" "${line_udp_a}$'\n'
 			fi
 			if [ "$m" != "wb" ]; then
 
-				line_b_ud=$(cat ${folder_ud}_tcp/${fn}_b)
-				line_b_ur=$(cat ${folder_ur}_tcp/${fn}_b)
+				line_b_ua=$(cat ${folder_ua}_tcp/${fn}_b)
+				line_b_ub=$(cat ${folder_ub}_tcp/${fn}_b)
 				if [ "$m" == "ws" ]; then
-					line_b_ud=${line_b_ud}" $fairwin_ud"
-					line_b_ur=${line_b_ur}" $fairwin_ur"
+					line_b_ua=${line_b_ua}" $fairwin_ua"
+					line_b_ub=${line_b_ub}" $fairwin_ub"
 				elif [ "$m" == "ts" ]; then
-					line_b_ud=${line_a_ud}" $fairrate_ud"
-					line_b_ur=${line_a_ur}" $fairrate_ur"
+					line_b_ua=${line_a_ua}" $fairrate_ua"
+					line_b_ub=${line_a_ub}" $fairrate_ub"
 				fi
-				line_udp_r=$(cat ${folder_ur}_udp/${fn}_b)
+				line_udp_b=$(cat ${folder_ub}_udp/${fn}_b)
 
-				filecontent_b_ud=${filecontent_b_ud}${udprate}" "${line_b_ud}$'\n'
-				filecontent_b_ur=${filecontent_b_ur}${udprate}" "${line_b_ur}$'\n'
-				filecontent_udp_r=${filecontent_udp_r}${udprate}" "${line_udp_r}$'\n'
+				filecontent_b_ua=${filecontent_b_ua}${udprate}" "${line_b_ua}$'\n'
+				filecontent_b_ub=${filecontent_b_ub}${udprate}" "${line_b_ub}$'\n'
+				filecontent_udp_b=${filecontent_udp_b}${udprate}" "${line_udp_b}$'\n'
 
 			fi
 
 		done
 		if [ "$m" == "ts" ]; then
-			echo "$filecontent_rateshare_ud" > ${filename}"rateshare_ud"
-			echo "$filecontent_rateshare_ur" > ${filename}"rateshare_ur"
+			echo "$filecontent_rateshare_ua" > ${filename}"rateshare_ua"
+			echo "$filecontent_rateshare_ub" > ${filename}"rateshare_ub"
 		fi
-		echo "$filecontent_a_ud" > ${filename}"_a_ud"
-		echo "$filecontent_a_ur" > ${filename}"_a_ur"
-		echo "$filecontent_ud" > ${filename}"_ud"
-		echo "$filecontent_ur" > ${filename}"_ur"
+		echo "$filecontent_a_ua" > ${filename}"_a_ua"
+		echo "$filecontent_a_ub" > ${filename}"_a_ub"
+		echo "$filecontent_ua" > ${filename}"_ua"
+		echo "$filecontent_ub" > ${filename}"_ub"
 
-		echo "$filecontent_b_ud" > ${filename}"_b_ud"
-		echo "$filecontent_b_ur" > ${filename}"_b_ur"
+		echo "$filecontent_b_ua" > ${filename}"_b_ua"
+		echo "$filecontent_b_ub" > ${filename}"_b_ub"
 		
 
-		echo "$filecontent_udp_d" > ${filename}"_udp_ud"
-		echo "$filecontent_udp_r" > ${filename}"_udp_ur"
+		echo "$filecontent_udp_a" > ${filename}"_udp_ua"
+		echo "$filecontent_udp_b" > ${filename}"_udp_ub"
 	done
 			
 	
@@ -2872,7 +2880,7 @@ set xtics font "Times-Roman" 120
 set style fill solid 1.0 border 
 set boxwidth 0.4
 set xrange [-1:37]
-set xlabel "UDP class:                   Classic                                ECN                                   Classic                               ECN                                       Classic                              ECN               " 
+set xlabel "UDP class:                   Classic                                ECT(1)                                   Classic                               ECN                                       Classic                              ECN               " 
 set label 2 "UDP rate:" at screen 0.2,0.85 front font "Times-Roman,120" tc rgb "black" left
 set label 3 "[Mbps]:" at screen 0.35,0.65 front font "Times-Roman,120" tc rgb "black" left
 '
@@ -2889,7 +2897,6 @@ set label 3 "[Mbps]:" at screen 0.35,0.65 front font "Times-Roman,120" tc rgb "b
 		gpi=$gpi"set label 3$aqc \"${aqm_labels[aqc]}\" at screen ${aqm_start},3.4 font \"Times-Roman,140\" tc rgb \"black\" left"$'\n'
 		aqm_start="$(($aqm_start + $aqm_step))"
 	done
-
 
 }
 
@@ -2914,7 +2921,7 @@ set boxwidth 0.2
 	link=100
 
 	for aqm in "${aqm_array[@]}"; do 
-		for t in "ur" "ud"; do
+		for t in "ua" "ub"; do
 			aqmname="o_${aqm}"
 			get_cc_captions_colors
 			title_a_mean="${cc_a} mean, P_{99}"
@@ -2982,7 +2989,7 @@ set logscale y
 	title_b_mean="${cc_b} mean, P_{99}"
 	link=100
 	for aqm in "${aqm_array[@]}"; do 
-		for t in "ur" "ud"; do
+		for t in "ua" "ub"; do
 			aqmname="o_${aqm}"
 			get_cc_captions_colors
 			title_a_mean="${cc_a} mean, P_{99}"
@@ -3041,7 +3048,7 @@ set logscale y
 	title_b_mean="${cc_b} mean, P_{99}"
 	link=100
 	for aqm in "${aqm_array[@]}"; do 
-		for t in "ur" "ud"; do
+		for t in "ua" "ub"; do
 			aqmname="o_${aqm}"
 			get_cc_captions_colors
 			title_a_mean="${cc_a} mean, P_{99}"
@@ -3081,6 +3088,89 @@ set logscale y
 	gnuplot ${targetfolder}/ws_o.gpi
 }
 
+function genplot_rs_o() {
+	do_header_overload
+
+	gpi=$gpi"set output \"${targetfolder}/rs_o.eps\""$'\n'
+	gpi=$gpi'set ylabel "Rate share"
+set style data histogram
+set style histogram rowstacked
+set style fill solid 1.0 border
+set boxwidth 0.4
+set xrange [-1:35]
+set yrange [0:100]
+
+'
+	aqm_step=3
+	aqm_start=2
+	declare -i acq
+	for (( aqc=0; aqc<3; aqc++ ))
+	do
+		if [ "$aqc" == "2" ]; then
+			aqm_start=$aqm_start+1
+		fi
+		gpi=$gpi"set label 3$aqc \"${aqm_labels[aqc]}\" at screen ${aqm_start},3.3 font \"Times-Roman,140\" tc rgb \"black\" left"$'\n'
+		aqm_start="$(($aqm_start + $aqm_step))"
+	done
+
+	used_titles=("" "" "" "" "")
+	declare -i used_titles_index=0
+
+	declare -i gap=0
+	gpi=$gpi"plot"
+	title_a_mean="${cc_ecn}"
+	title_b_mean="${cc_nonecn}"
+	title_udp="ECT(1) UDP"
+
+	link=100
+	for aqm in "${aqm_array[@]}"; do
+		for t in "ua" "ub"; do
+			aqmname="o_${aqm}"
+			get_cc_captions_colors
+			title_a_mean="${cc_ecn}"
+			if [ $(contains "${used_titles[@]}" "${title_a_mean}") == "y" ]; then
+				title_a_mean=""
+			else
+				used_titles[used_titles_index]=$title_a_mean
+				used_titles_index=$used_titles_index+1
+			fi
+
+			title_b_mean="${cc_nonecn}"
+			if [ $(contains "${used_titles[@]}" "${title_b_mean}") == "y" ]; then
+				title_b_mean=""
+			else
+				used_titles[used_titles_index]=$title_b_mean
+				used_titles_index=$used_titles_index+1
+			fi
+
+			if [ "$t" == "ua" ]; then
+				title_udp="ECT(1) UDP"
+				color_udp="#30036e"
+			else
+				title_udp="Not-ECT UDP"
+			    color_udp="brown"
+			fi
+			if [ $(contains "${used_titles[@]}" "${title_udp}") == "y" ]; then
+				title_udp=""
+			else
+				used_titles[used_titles_index]=$title_udp
+				used_titles_index=$used_titles_index+1
+			fi
+
+			filename=${targetfolder}"/data/"${aqmname}"_"${link}"_tsrateshare"_${t}
+
+			gpi=$gpi" newhistogram lt 1, '${filename}' using ((\$2)*100)/(\$2+\$3+\$4):xtic(1) lc rgb '${color_udp}' title \"${title_udp}\", '' using ((\$4)*100)/(\$2+\$3+\$4):xtic(1) lc rgb '${color_nonecn}' title \"${title_b_mean}\", '' using ((\$3)*100)/(\$2+\$3+\$4):xtic(1) lc rgb '${color_ecn}' title \"${title_a_mean}\","
+
+
+
+		done
+	done
+
+	gpi=$gpi$'\n'
+	echo "$gpi" > ${targetfolder}/rs_o.gpi
+	gnuplot ${targetfolder}/rs_o.gpi
+}
+
 function genplot_ls_o() {
 	do_header_overload
 
@@ -3094,73 +3184,115 @@ set label 5 "mean, P_{25}, P_{99}:" at screen 0.05,3.65 front font "Times-Roman,
 
 '
 
-	used_titles=("" "" "" "" "")
+	aqm_step=3
+	aqm_start=2
+	#aqm_start=4
+	declare -i acq
+	for (( aqc=0; aqc<3; aqc++ ))
+	do
+		if [ "$aqc" == "2" ]; then
+			aqm_start=$aqm_start+1
+		fi
+		gpi=$gpi"set label 3$aqc \"${aqm_labels[aqc]}\" at screen ${aqm_start},3.3 font \"Times-Roman,140\" tc rgb \"black\" left"$'\n'
+		aqm_start="$(($aqm_start + $aqm_step))"
+	done
+
+
+	used_titles=("" "" "" "" "" "" "" "")
 	declare -i used_titles_index=0
 	declare -i gap=0
 	gpi=$gpi"plot "
-	title_a_mean="Drops L4S"
-	title_b_mean="Drops Classic"
-	title_marks_a="Marks ${cc_a}"
-	title_marks_b="Marks ${cc_b}"
-	title_drops_udp="Drops UDP"
+	title_a_mean="Drops ${cc_ecn}"
+	title_b_mean="Drops ${cc_nonecn}"
+	title_marks_a="Marks ${cc_ecn}"
+	title_marks_udp="Marks ECT(1) UDP"
+	title_drops_udp="Drops ECT(1) UDP"
+	
+	color_marks_udp="#30036e"
+	color_drops_udp="#036b91"
+
 	link=100
-	for aqm in "${aqm_array[@]}"; do 
-		for t in "ur" "ud"; do
+	for aqm in "${aqm_array[@]}"; do
+		for t in "ua" "ub"; do
 			aqmname="o_${aqm}"
 			get_cc_captions_colors
-			title_a_mean="Drops L4S"
+
+			title_a_mean="Drops ${cc_ecn}"
 			if [ $(contains "${used_titles[@]}" "${title_a_mean}") == "y" ]; then
     			title_a_mean=""
 			else
 				used_titles[used_titles_index]=$title_a_mean
 				used_titles_index=$used_titles_index+1
 			fi
-			title_b_mean="Drops Classic"
+
+			title_b_mean="Drops ${cc_nonecn}"
 			if [ $(contains "${used_titles[@]}" "${title_b_mean}") == "y" ]; then
     			title_b_mean=""
 			else
 				used_titles[used_titles_index]=$title_b_mean
 				used_titles_index=$used_titles_index+1
 			fi
-			title_marks_a="Marks ${cc_a}"
+
+			title_marks_a="Marks ${cc_ecn}"
 			if [ $(contains "${used_titles[@]}" "${title_marks_a}") == "y" ]; then
     			title_marks_a=""
 			else
 				used_titles[used_titles_index]=$title_marks_a
 				used_titles_index=$used_titles_index+1
 			fi
-			
-			title_marks_b="Marks ${cc_b}"
-			if [ $(contains "${used_titles[@]}" "${title_marks_b}") == "y" ]; then
-    			title_marks_b=""
+
+			title_marks_udp="Marks ECT(1) UDP"
+			if [ $(contains "${used_titles[@]}" "${title_marks_udp}") == "y" ]; then
+				title_marks_udp=""
 			else
-				used_titles[used_titles_index]=$title_marks_b
+				used_titles[used_titles_index]=$title_marks_udp
+				used_titles_index=$used_titles_index+1
+			fi
+			
+			if [ "$t" == "ud" ]; then
+				title_drops_udp="Drops ECT(1) UDP"
+				color_drops_udp="#036b91"
+			else
+				title_drops_udp="Drops Not-ECT UDP"
+			        color_drops_udp="brown"
+			fi
+
+			title_drops_udp="Drops ECT(1) UDP"
+			if [ $(contains "${used_titles[@]}" "${title_drops_udp}") == "y" ]; then
+				title_drops_udp=""
+			else
+				used_titles[used_titles_index]=$title_drops_udp
 				used_titles_index=$used_titles_index+1
 			fi
 
-			filename_a=${targetfolder}"/data/"${aqmname}"_"${link}"_ls_a"_${t}
-			filename_b=${targetfolder}"/data/"${aqmname}"_"${link}"_ls_b"_${t}
-			filename_marks_a=${targetfolder}"/data/"${aqmname}"_"${link}"_marks_a"_${t}
-			filename_marks_b=${targetfolder}"/data/"${aqmname}"_"${link}"_marks_b"_${t}
-			gpi=$gpi"'${filename_b}' using (\$0+${gap}):3:7:5:3 with candlesticks ls 1 lw 30 lc rgb 'red' title \"${title_b_mean}\", "
-			smallgap="$gap".3
+			filename_a=${targetfolder}"/data/"${aqmname}"_"${link}"_ls_ecn"_${t}
+			filename_b=${targetfolder}"/data/"${aqmname}"_"${link}"_ls_nonecn"_${t}
+			filename_marks_ecn=${targetfolder}"/data/"${aqmname}"_"${link}"_marks_ecn"_${t}
+			filename_marks_udp=${targetfolder}"/data/"${aqmname}"_"${link}"_marks_udp"_${t}
+			filename_drops_udp=${targetfolder}"/data/"${aqmname}"_"${link}"_ls_udp"_${t}
+			gpi=$gpi"'${filename_marks_ecn}' using (\$0+${gap}):3:7:5:3 with candlesticks ls 1 lw 30 lc rgb '${color_ecn}' title \"${title_marks_a}\", "
+			smallgap="$gap".2
 
-			gpi=$gpi"'${filename_a}' using (\$0+${smallgap}):3:7:5:3:xtic(1) with candlesticks ls 1 lw 30 lc rgb 'purple' title \"${title_a_mean}\", "
+			gpi=$gpi"'${filename_a}' using (\$0+${smallgap}):3:7:5:3:xtic(1) with candlesticks ls 1 lw 30 lc rgb '${color_ecndrops}' title \"${title_a_mean}\", "
+			smallgap="$gap".4
+
+			gpi=$gpi"'${filename_b}' using (\$0+${smallgap}):3:7:5:3 with candlesticks ls 1 lw 30 lc rgb '${color_nonecn}' title \"${title_b_mean}\", "
 			smallgap="$gap".6
 
-			gpi=$gpi"'${filename_marks_a}' using (\$0+${smallgap}):3:7:5:3 with candlesticks ls 1 lw 30 lc rgb '${color_a}' title \"${title_marks_a}\", "
-			smallgap="$gap".9
-			gpi=$gpi"'${filename_marks_b}' using (\$0+${smallgap}):3:7:5:3 with candlesticks ls 1 lw 30 lc rgb '${color_b}' title \"${title_marks_b}\", "
+			gpi=$gpi"'${filename_marks_udp}' using (\$0+${smallgap}):3:7:5:3 with candlesticks ls 1 lw 30 lc rgb '${color_marks_udp}' title \"${title_marks_udp}\", "
+			smallgap="$gap".8
+	
+			gpi=$gpi"'${filename_drops_udp}' using (\$0+${smallgap}):3:7:5:3 with candlesticks ls 1 lw 30 lc rgb '${color_drops_udp}' title \"${title_drops_udp}\", "
 
 			gap=$gap+6
 			title_a_mean=""
 			title_b_mean=""
 			title_marks_a=""
-			title_marks_b=""
+			title_marks_nonecn=""
 		done
 		gap=$gap+1
 	done
-	
+
 	gpi=$gpi$'\n'
 	echo "$gpi" > ${targetfolder}/ls_o.gpi
 	gnuplot ${targetfolder}/ls_o.gpi
@@ -3182,7 +3314,7 @@ set logscale y
 	title_wb="${cc_a}/${cc_b}"
 	link=100
 	for aqm in "${aqm_array[@]}"; do 
-		for t in "ur" "ud"; do
+		for t in "ua" "ub"; do
 			aqmname="o_${aqm}"
 			get_cc_captions_colors
 			title_wb="${cc_a}/${cc_b}"

@@ -69,7 +69,7 @@ ssh $CLIENT_B "./unset_delay_port_netem.sh"
 echo "setting ecn rule for UDP in iptables"
 
 ssh ${SERVER_A} "sudo iptables -t mangle -F"
-ssh ${SERVER_A} "sudo iptables -t mangle -A OUTPUT -p udp -j TOS --or-tos 10"
+ssh ${SERVER_A} "sudo iptables -t mangle -A OUTPUT -p udp -j TOS --or-tos 01"
 
 sleep 1
 for udpecn in "1" "0"; do
@@ -91,7 +91,7 @@ for udpecn in "1" "0"; do
 		
 		start_static
 		
-		sleep 10
+		sleep 50
 		start_udp_flows
 		sleep 10
 		start_ta

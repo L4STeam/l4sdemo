@@ -67,7 +67,7 @@ void readFile(std::string filename, std::vector<uint64_t> **header, std::vector<
         // Skip first col
         infile >> value_ms;
 
-        if (infile.eof()) {
+        if (infile.eof() && samples >= NR_SAMPLES) {
             break;
         }
         if (sample_time != NULL) {

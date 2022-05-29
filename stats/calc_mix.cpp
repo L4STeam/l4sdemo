@@ -495,8 +495,11 @@ void getSamplesUtilization() {
             infile_b >> rate_b;
             if (colnr == 2) {
                 util_a = rate_a/8 * 100 / link_bytes_ps;
+                if (util_a > 100) util_a = 100;
                 util_b = rate_b/8 * 100 / link_bytes_ps;
+                if (util_b > 100) util_b = 100;
                 util = (rate_a+rate_b)/8 * 100 / link_bytes_ps;
+                if (util > 100) util = 100;
                 samples_a->push_back(util_a);
                 samples_b->push_back(util_b);
                 samples->push_back(util);
