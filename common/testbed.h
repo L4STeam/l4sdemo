@@ -42,15 +42,6 @@ static inline void __testbed_inc_drop_count(struct testbed_metrics *testbed,
 		testbed->drops_nonecn++;
 }
 
-
-static inline __u8 ipv4_get_ip_bits(const struct iphdr *iph)
-{
-	
-	uint32_t saddr = iph->saddr;
-	__u8 tsmock = ntohl(saddr);
-	return tsmock;
-}
-
 static inline void testbed_inc_drop_count(struct testbed_metrics *testbed,
 					  struct sk_buff *skb)
 {
@@ -64,19 +55,16 @@ static inline void testbed_inc_drop_count(struct testbed_metrics *testbed,
 			break;
 
 		__testbed_inc_drop_count(testbed,
-					 ipv4_get_ip_bits(ip_hdr(skb)));
+					 ipv4_get_dsfield(ip_hdr(skb)));
 		break;
 	case htons(ETH_P_IPV6):
-		break;
-		// break for now, since traffic_analyzer skips IPV6 packets anyway
-	/*	wlen += sizeof(struct iphdr);
+		wlen += sizeof(struct iphdr);
 		if (!pskb_may_pull(skb, wlen))
 			break;
 
 		__testbed_inc_drop_count(testbed,
-					 ipv6_get_ip_bits(ipv6_hdr(skb)));
+					 ipv6_get_dsfield(ipv6_hdr(skb)));
 		break;
-	*/
 	}
 }
 

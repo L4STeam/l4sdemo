@@ -22,7 +22,6 @@ enum {
 	TCA_DUALPI2_C_PROTECTION,	/* Percentage */
 	TCA_DUALPI2_ECN_MASK,		/* L4S queue classification mask */
 	TCA_DUALPI2_PAD,
-	TCA_DUALPI2_SPLIT_GSO,
 	__TCA_DUALPI2_MAX
 };
 
